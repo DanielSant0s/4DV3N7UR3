@@ -50,3 +50,28 @@ def collision_test(rect, tiles):
         if rect.colliderect(tile):
             hit_list.append(tile)
     return hit_list
+
+def blur(surface, qt):
+    radius = 1.0/float(qt)
+    size = surface.get_size()
+    scale_size = (int(size[0]*radius), int(size[1]*radius))
+    surf = pygame.transform.smoothscale(surface, scale_size)
+    surf = pygame.transform.smoothscale(surf, size)
+    return surf
+
+def new_rectEX(width, height, color):
+    rect = pygame.Surface((width,height), pygame.SRCALPHA)
+    rect.fill(color)
+    return rect
+
+def smooth_camera(camera, player_rect, display, l, r, j):
+    if not r and not l:
+        if camera[0] > player_rect.x-180:
+            camera[0] -= 2.4
+        if camera[0] < player_rect.x-180:
+            camera[0] += 2.4
+    if not j:
+        if camera[1] > player_rect.y-100:
+            camera[1] -= 2.0
+        if camera[1] < player_rect.y-100:
+            camera[1] += 2.0
