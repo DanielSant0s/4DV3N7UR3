@@ -133,10 +133,10 @@ while True: # game loop
         loopBackground(display, bg, 2.0, 0, (False, True))
         display.blit(dark_overlay, (0,0))
         print_text(font, display, "4DV3N7UR3", display.get_width()/2, -40, (255,255,255), center=True, scale=4)
-        print_text(font, display, "Start Game", display.get_width()/2, 50, (255,255,255), center=True, scale=2.5)
-        print_text(font, display, "Options", display.get_width()/2, 80, (255,255,255), center=True, scale=2.5)
-        print_text(font, display, "Creator", display.get_width()/2, 110, (255,255,255), center=True, scale=2.5)
-        print_text(font, display, "Exit", display.get_width()/2, 140, (255,255,255), center=True, scale=2.5)
+        print_text(font, display, "Start Game", display.get_width()/2, 50, (255,255,255) if menu_ptr == 0 else (95,95,211), center=True, scale=2.5)
+        print_text(font, display, "Options", display.get_width()/2, 80, (255,255,255) if menu_ptr == 1 else (95,95,211), center=True, scale=2.5)
+        print_text(font, display, "Creator", display.get_width()/2, 110, (255,255,255) if menu_ptr == 2 else (95,95,211), center=True, scale=2.5)
+        print_text(font, display, "Exit", display.get_width()/2, 140, (255,255,255) if menu_ptr == 3 else (95,95,211), center=True, scale=2.5)
         for event in pygame.event.get(): # event loop
             if event.type == QUIT: # check for window quit
                 exit_game()
