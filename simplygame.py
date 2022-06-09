@@ -32,6 +32,11 @@ def print_text(font, display, text, x, y, color=(255,255,255), bg_color=None, al
             text_rect.midtop = (x, y+((i+1)*text_rect.height))
         display.blit(text_surface, text_rect)
 
+def get_text_size(font, text, scale=1.0):
+    text_surface = font.render(text, True, (0,0,0))
+    text_rect = text_surface.get_rect()
+    return (text_rect.width*scale, text_rect.height*scale)
+
 
 def load_texture_dictionary(path, scale=1.0):
     tex_dict = []

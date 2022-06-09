@@ -77,18 +77,21 @@ life_lost = 0
 
 mouse_pos = pygame.mouse.get_pos()
 
+def dt_value(dt, value):
+    return value*60*(dt/1000)
+
 fullscreen = True
 
-def move_player(ml, mr, bl, br, y_momentum, camera, player, state):
+def move_player(ml, mr, bl, br, y_momentum, camera, player, state, ms):
     player_movement = [0, 0]
     if mr:
-        player_movement[0] += 2.0
+        player_movement[0] += dt_value(ms, 2.0)
         if not br:
-            camera[0] += 2.0
+            camera[0] += dt_value(ms, 2.0)
     if ml:
-        player_movement[0] -= 2.0
+        player_movement[0] -= dt_value(ms, 2.0)
         if not bl:
-            camera[0] -= 2.0
+            camera[0] -= dt_value(ms, 2.0)
     player_movement[1] += y_momentum
     y_momentum += 0.2
     if y_momentum < 0:
@@ -110,10 +113,6 @@ dark_overlay = new_rectEX(display.get_width(), display.get_height(), (0,0,0,128)
 
 menu_ptr = 0
 
-def exit_game():
-    pygame.quit()
-    sys.exit()
-
 video_modes = [(640,480), (800,600), (1024,768), (1280,720), (1366, 768), (1280,1024), (1600,900), (1920,1080)]
 
 sel_limit = 7
@@ -122,20 +121,26 @@ new_mode = (screen.get_width(),screen.get_height())
 
 options_store = [0, 1, 0, 0]
 
-while True: # game loop
+def draw_menu(display, font, strlist, ptr, x, y, sel_color, color, scale=1.0, center=True):
+    for i in range(len(strlist)):
+        print_text(font, display, strlist[i], x, y+(i*get_text_size(font, strlist[i], scale)[1]), (sel_color if ptr == i else color), center=center, scale=scale)
+
+game = True
+
+while game: # game loop
     if game_state == MAIN_MENU:
-        loopBackground(display, bg, 2.0, 0, (False, True))
+        loopBackground(display, bg, dt_value(ms, 2.0), 0, (False, True))
         display = blur(display, 2.8)
 
         display.blit(dark_overlay, (0,0))
         print_text(font, display, "4DV3N7UR3", display.get_width()/2, -25, (255,255,255), center=True, scale=4)
-        print_text(font, display, "Start Game", display.get_width()/2, 50, (255,255,255) if menu_ptr == 0 else (95,95,185), center=True, scale=2.5)
-        print_text(font, display, "Options", display.get_width()/2, 80, (255,255,255) if menu_ptr == 1 else (95,95,185), center=True, scale=2.5)
-        print_text(font, display, "Creator", display.get_width()/2, 110, (255,255,255) if menu_ptr == 2 else (95,95,185), center=True, scale=2.5)
-        print_text(font, display, "Exit", display.get_width()/2, 140, (255,255,255) if menu_ptr == 3 else (95,95,185), center=True, scale=2.5)
+
+        main_labels = ["Start Game", "Options", "Creator", "Exit"]
+        draw_menu(display, font, main_labels, menu_ptr, display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
+        
         for event in pygame.event.get(): # event loop
             if event.type == QUIT: # check for window quit
-                exit_game()
+                game = False
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
                 if keys[K_RETURN]:
@@ -168,16 +173,13 @@ while True: # game loop
                         menu_ptr += 1
 
     elif game_state == OPTIONS_MENU:
-        loopBackground(display, bg, 2.0, 0, (False, True))
+        loopBackground(display, bg, dt_value(ms, 2.0), 0, (False, True))
         display = blur(display, 2.8)
 
         display.blit(dark_overlay, (0,0))
         print_text(font, display, "Options", display.get_width()/2, -25, (255,255,255), center=True, scale=4)
-        print_text(font, display, f"Resolution: {new_mode[0]}x{new_mode[1]}", display.get_width()/2, 50, (255,255,255) if menu_ptr == 0 else (95,95,185), center=True, scale=2.5)
-        print_text(font, display, f"Fullscreen: {fullscreen}", display.get_width()/2, 80, (255,255,255) if menu_ptr == 1 else (95,95,185), center=True, scale=2.5)
-        print_text(font, display, f"FPS Limit: {menu_lim}", display.get_width()/2, 110, (255,255,255) if menu_ptr == 2 else (95,95,185), center=True, scale=2.5)
-        print_text(font, display, "Back", display.get_width()/2, 140, (255,255,255) if menu_ptr == 3 else (95,95,185), center=True, scale=2.5)
-        print_text(font, display, f"x={selector} y={menu_ptr}", display.get_width()/2, 220, (255,255,255), center=True)
+        opt_labels = [f"Resolution: {new_mode[0]}x{new_mode[1]}", f"Fullscreen: {fullscreen}", f"FPS Limit: {menu_lim}", "Back"]
+        draw_menu(display, font, opt_labels, menu_ptr, display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
 
         if menu_ptr == 0:
             sel_limit = len(video_modes)-1
@@ -208,7 +210,7 @@ while True: # game loop
                 keys = pygame.key.get_pressed()
                 if keys[K_RETURN]:
                     if menu_ptr == 0:
-                        screen = pygame.display.set_mode(new_mode, pygame.FULLSCREEN)
+                        screen = pygame.display.set_mode(new_mode, pygame.FULLSCREEN if fullscreen else 0)
                         display = pygame.Surface((250*(new_mode[0]/new_mode[1]), 250))
                     if menu_ptr == 1:
                         if not fullscreen:
@@ -247,13 +249,13 @@ while True: # game loop
                         else:
                             selector += 1
     elif game_state == GAME_RUNNING:
-        loopBackground(display, bg, 1.5, player_y_momentum, (moving_left, moving_right))
+        loopBackground(display, bg, dt_value(ms, 1.5), player_y_momentum, (moving_left, moving_right))
         time_acc = anim.update(anim_state, time_acc)
         tile_rects = render_map(display, tilelist, TILE_SIZE, game_map, global_camera)
 
         hud.render(display, game_hud, 10, 10)
 
-        player_movement, player_y_momentum = move_player(moving_left, moving_right, blocked_left, blocked_right, player_y_momentum, global_camera, player, anim_state)
+        player_movement, player_y_momentum = move_player(moving_left, moving_right, blocked_left, blocked_right, player_y_momentum, global_camera, player, anim_state, ms)
 
         mouse_pos = pygame.mouse.get_pos()
 
@@ -285,14 +287,14 @@ while True: # game loop
             blocked_left = True
             if player_y_momentum >= 0:
                 moving_left = False
-                global_camera[0] -= 2.0
+                global_camera[0] -= dt_value(ms, 2.0)
         else:
             blocked_left = False
         if collisions['right']:
             blocked_right = True
             if player_y_momentum >= 0:
                 moving_right = False
-                global_camera[0] += 2.0
+                global_camera[0] += dt_value(ms, 2.0)
         else:
             blocked_right = False
 
@@ -301,7 +303,7 @@ while True: # game loop
 
         for event in pygame.event.get(): # event loop
             if event.type == QUIT: # check for window quit
-                exit_game()
+                game = False
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
                 if keys[K_RIGHT]:
@@ -368,4 +370,7 @@ while True: # game loop
     screen.blit(surf, (0, 0))
     ms = clock.tick(fps_limit)
     time_acc += ms
+
     pygame.display.update()
+
+pygame.quit()
