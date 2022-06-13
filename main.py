@@ -8,6 +8,7 @@ from map_system import *
 from char_system import *
 from simplygame import *
 from consts import *
+import ui
 import hud
 import anim
 
@@ -77,31 +78,7 @@ life_lost = 0
 
 mouse_pos = pygame.mouse.get_pos()
 
-def dt_value(dt, value):
-    return value*60*(dt/1000)
-
 fullscreen = True
-
-def move_player(ml, mr, bl, br, y_momentum, camera, player, state, ms):
-    player_movement = [0, 0]
-    if mr:
-        player_movement[0] += dt_value(ms, 2.0)
-        if not br:
-            camera[0] += dt_value(ms, 2.0)
-    if ml:
-        player_movement[0] -= dt_value(ms, 2.0)
-        if not bl:
-            camera[0] -= dt_value(ms, 2.0)
-    player_movement[1] += y_momentum
-    y_momentum += 0.2
-    if y_momentum < 0:
-        camera[1] += y_momentum
-    if y_momentum > 3:
-        y_momentum = 3
-        camera[1] += y_momentum
-        if state['sprite'] != player['jump']['sprite']:
-            anim.change(player, state, 'jump')
-    return player_movement, y_momentum
 
 game_hud = hud.init()
 
@@ -111,15 +88,12 @@ game_state = MAIN_MENU
 
 dark_overlay = new_rectEX(display.get_width(), display.get_height(), (0,0,0,128))
 
-menu_ptr = 0
-
 video_modes = [(640,480), (800,600), (1024,768), (1280,720), (1366, 768), (1280,1024), (1600,900), (1920,1080)]
 
-sel_limit = 7
-selector = 0
-new_mode = (screen.get_width(),screen.get_height())
+menu_ptr = {'ptr': 0, 'lim': 4, 'store':None}
+options_ptr = [{'ptr': 0, 'lim': 4, 'store':[0,1,0,0]}, {'ptr': 0, 'lim': 7, 'store':None}]
 
-options_store = [0, 1, 0, 0]
+new_mode = (screen.get_width(),screen.get_height())
 
 def draw_menu(display, font, strlist, ptr, x, y, sel_color, color, scale=1.0, center=True):
     for i in range(len(strlist)):
@@ -136,7 +110,7 @@ while game: # game loop
         print_text(font, display, "4DV3N7UR3", display.get_width()/2, -25, (255,255,255), center=True, scale=4)
 
         main_labels = ["Start Game", "Options", "Creator", "Exit"]
-        draw_menu(display, font, main_labels, menu_ptr, display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
+        draw_menu(display, font, main_labels, menu_ptr['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
         
         for event in pygame.event.get(): # event loop
             if event.type == QUIT: # check for window quit
@@ -144,33 +118,23 @@ while game: # game loop
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
                 if keys[K_RETURN]:
-                    if menu_ptr == 0:
+                    if menu_ptr['ptr'] == 0:
                         game_state = GAME_RUNNING
-                    elif menu_ptr == 1:
+                    elif menu_ptr['ptr'] == 1:
                         game_state = OPTIONS_MENU
                         for i in range(len(video_modes)):
                             if new_mode in video_modes:
                                 if video_modes[i] == new_mode:
-                                    selector = i
+                                    options_ptr[1]['ptr'] = i
                                     break
                             else:
                                 video_modes.append(new_mode)
-                                selector = 8
+                                options_ptr[1]['ptr'] = 8
                                 break
-                        options_store[0] = selector
-                        menu_ptr = 0
-                    elif menu_ptr == 3:
-                        exit_game()
-                if keys[K_UP]:
-                    if menu_ptr == 0:
-                        menu_ptr = 3
-                    else:
-                        menu_ptr -= 1
-                if keys[K_DOWN]:
-                    if menu_ptr == 3:
-                        menu_ptr = 0
-                    else:
-                        menu_ptr += 1
+                        options_ptr[0]['store'][0] = options_ptr[1]['ptr']
+                    elif menu_ptr['ptr'] == 3:
+                        game = False
+                ui.process_menu_commands({'dec':keys[K_UP], 'inc':keys[K_DOWN]}, menu_ptr)
 
     elif game_state == OPTIONS_MENU:
         loopBackground(display, bg, dt_value(ms, 2.0), 0, (False, True))
@@ -179,75 +143,49 @@ while game: # game loop
         display.blit(dark_overlay, (0,0))
         print_text(font, display, "Options", display.get_width()/2, -25, (255,255,255), center=True, scale=4)
         opt_labels = [f"Resolution: {new_mode[0]}x{new_mode[1]}", f"Fullscreen: {fullscreen}", f"FPS Limit: {menu_lim}", "Back"]
-        draw_menu(display, font, opt_labels, menu_ptr, display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
+        draw_menu(display, font, opt_labels, options_ptr[0]['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
 
-        if menu_ptr == 0:
-            sel_limit = len(video_modes)-1
-            new_mode = video_modes[selector]
-        elif menu_ptr == 1:
-            sel_limit = 1
-            fullscreen = bool(selector)
-        elif menu_ptr == 2:
-            sel_limit = 2
-            if selector == 0:
+        if options_ptr[0]['ptr'] == 0:
+            options_ptr[1]['lim'] = len(video_modes)
+            new_mode = video_modes[options_ptr[1]['ptr']]
+        elif options_ptr[0]['ptr'] == 1:
+            options_ptr[1]['lim'] = 2
+            fullscreen = bool(options_ptr[1]['ptr'])
+        elif options_ptr[0]['ptr'] == 2:
+            options_ptr[1]['lim'] = 1
+            if options_ptr[1]['ptr'] == 0:
                 menu_lim = 60
-            if selector == 1:
-                menu_lim = 120
-            if selector == 2:
-                menu_lim = 30
-        elif menu_ptr == 3:
-            sel_limit = 0
+        elif options_ptr[0]['ptr'] == 3:
+            options_ptr[1]['lim'] = 0
 
-        if selector > sel_limit:
-            selector = 0
-        elif selector < 0:
-            selector = sel_limit
+        if options_ptr[1]['ptr'] > options_ptr[1]['lim']:
+            options_ptr[1]['ptr'] = 0
+        elif options_ptr[1]['ptr'] < 0:
+            options_ptr[1]['ptr'] = options_ptr[1]['lim']
 
         for event in pygame.event.get():
             if event.type == QUIT:
-                exit_game()
+                game = False
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
                 if keys[K_RETURN]:
-                    if menu_ptr == 0:
+                    if options_ptr[0]['ptr'] == 0:
                         screen = pygame.display.set_mode(new_mode, pygame.FULLSCREEN if fullscreen else 0)
                         display = pygame.Surface((250*(new_mode[0]/new_mode[1]), 250))
-                    if menu_ptr == 1:
+                    if options_ptr[0]['ptr'] == 1:
                         if not fullscreen:
                             screen = pygame.display.set_mode(new_mode)
                             display = pygame.Surface((250*(new_mode[0]/new_mode[1]), 250))
                         else:
                             screen = pygame.display.set_mode(new_mode, pygame.FULLSCREEN)
                             display = pygame.Surface((250*(screen.get_width()/screen.get_height()), 250))
-                    if menu_ptr == 2:
+                    if options_ptr[0]['ptr'] == 2:
                         fps_limit = menu_lim
-                    if menu_ptr == 3:
+                    if options_ptr[0]['ptr'] == 3:
                         game_state = MAIN_MENU
-                if keys[K_UP]:
-                    options_store[menu_ptr] = selector
-                    if menu_ptr == 0:
-                        menu_ptr = 3
-                    else:
-                        menu_ptr -= 1
-                    selector = options_store[menu_ptr]
-                if keys[K_DOWN]:
-                    options_store[menu_ptr] = selector
-                    if menu_ptr == 3:
-                        menu_ptr = 0
-                    else:
-                        menu_ptr += 1
-                    selector = options_store[menu_ptr]
-                if sel_limit > 0:
-                    if keys[K_LEFT]:
-                        if selector == 0:
-                            selector = sel_limit
-                        else:
-                            selector -= 1
-                    if keys[K_RIGHT]:
-                        if selector == sel_limit:
-                            selector = 0
-                        else:
-                            selector += 1
+                ui.process_menu_commands([{'dec':keys[K_UP], 'inc':keys[K_DOWN]}, {'dec':keys[K_LEFT], 'inc':keys[K_RIGHT]}], options_ptr)
+
+        print_text(font, display, f"{options_ptr[0]['store']}", display.get_width()/2, 0, (255,255,255), center=True, scale=1)
     elif game_state == GAME_RUNNING:
         loopBackground(display, bg, dt_value(ms, 1.5), player_y_momentum, (moving_left, moving_right))
         time_acc = anim.update(anim_state, time_acc)
@@ -299,7 +237,6 @@ while game: # game loop
             blocked_right = False
 
         player_rect = draw_char(display, player_rect, global_camera, anim_state)
-
 
         for event in pygame.event.get(): # event loop
             if event.type == QUIT: # check for window quit

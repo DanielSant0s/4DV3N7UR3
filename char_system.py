@@ -44,3 +44,25 @@ def draw_char(display, rect, camera, state):
     else:
         display.blit(state['sprite'], World2Screen(rect, camera), (((state['sprite'].get_width()/state['lim'])*state['prog']),0,(state['sprite'].get_width()/state['lim']), state['sprite'].get_height()))
     return backup
+
+    
+def move_player(ml, mr, bl, br, y_momentum, camera, player, state, ms):
+    player_movement = [0, 0]
+    if mr:
+        player_movement[0] += dt_value(ms, 2.0)
+        if not br:
+            camera[0] += dt_value(ms, 2.0)
+    if ml:
+        player_movement[0] -= dt_value(ms, 2.0)
+        if not bl:
+            camera[0] -= dt_value(ms, 2.0)
+    player_movement[1] += y_momentum
+    y_momentum += 0.2
+    if y_momentum < 0:
+        camera[1] += y_momentum
+    if y_momentum > 3:
+        y_momentum = 3
+        camera[1] += y_momentum
+        if state['sprite'] != player['jump']['sprite']:
+            anim.change(player, state, 'jump')
+    return player_movement, y_momentum

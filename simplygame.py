@@ -80,3 +80,6 @@ def smooth_camera(camera, player_rect, display, l, r, j):
             camera[1] -= 2.0
         if camera[1] < player_rect.y-100:
             camera[1] += 2.0
+
+def dt_value(dt, value):
+    return value
