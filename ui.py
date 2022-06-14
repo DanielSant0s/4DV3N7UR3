@@ -40,3 +40,7 @@ def process_menu_commands(event_dict, ptr_dict):
                 ptr_dict[i]['ptr'] += 1
             if ptr_dict[i]['store'] is not None:
                 ptr_dict[1]['ptr'] = ptr_dict[0]['store'][ptr_dict[0]['ptr']]
+
+def draw_menu(display, font, strlist, ptr, x, y, sel_color, color, scale=1.0, center=True):
+    for i in range(len(strlist)):
+        print_text(font, display, strlist[i], x, y+(i*get_text_size(font, strlist[i], scale)[1]), (sel_color if ptr == i else color), center=center, scale=scale)

@@ -1,22 +1,18 @@
 import pygame
 from pygame.locals import *
-import sys
-import os
-import io
 
 from map_system import *
 from char_system import *
 from simplygame import *
 from consts import *
-import ui
-import hud
+import game
 import anim
+import hud
+import ui
 
-clock = pygame.time.Clock()
-pygame.init()
-pygame.display.set_caption('4DV3N7UR3')
-screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-display = pygame.Surface((250*(screen.get_width()/screen.get_height()), 250))
+clock, screen, display = game.init('4DV3N7UR3', 0, 0)
+
+scan = new_rectEX(display.get_width(), 1, (0,0,0,0))
 
 global_camera = [-180.0, -100.0]
 
@@ -95,13 +91,30 @@ options_ptr = [{'ptr': 0, 'lim': 4, 'store':[0,1,0,0]}, {'ptr': 0, 'lim': 7, 'st
 
 new_mode = (screen.get_width(),screen.get_height())
 
-def draw_menu(display, font, strlist, ptr, x, y, sel_color, color, scale=1.0, center=True):
-    for i in range(len(strlist)):
-        print_text(font, display, strlist[i], x, y+(i*get_text_size(font, strlist[i], scale)[1]), (sel_color if ptr == i else color), center=center, scale=scale)
+game_running= True
 
-game = True
+def move_player(ml, mr, bl, br, y_momentum, camera, player, state, ms):
+    player_movement = [0, 0]
+    if mr:
+        player_movement[0] += dt_value(ms, 2.0)
+        if not br:
+            camera[0] += dt_value(ms, 2.0)
+    if ml:
+        player_movement[0] -= dt_value(ms, 2.0)
+        if not bl:
+            camera[0] -= dt_value(ms, 2.0)
+    player_movement[1] += y_momentum
+    y_momentum += 0.2
+    if y_momentum < 0:
+        camera[1] += y_momentum
+    if y_momentum > 3:
+        y_momentum = 3
+        camera[1] += y_momentum
+        if state['sprite'] != player['jump']['sprite']:
+            anim.change(player, state, 'jump')
+    return player_movement, y_momentum
 
-while game: # game loop
+while game_running: # game loop
     if game_state == MAIN_MENU:
         loopBackground(display, bg, dt_value(ms, 2.0), 0, (False, True))
         display = blur(display, 2.8)
@@ -110,11 +123,11 @@ while game: # game loop
         print_text(font, display, "4DV3N7UR3", display.get_width()/2, -25, (255,255,255), center=True, scale=4)
 
         main_labels = ["Start Game", "Options", "Creator", "Exit"]
-        draw_menu(display, font, main_labels, menu_ptr['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
+        ui.draw_menu(display, font, main_labels, menu_ptr['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
         
         for event in pygame.event.get(): # event loop
             if event.type == QUIT: # check for window quit
-                game = False
+                game_running = False
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
                 if keys[K_RETURN]:
@@ -133,7 +146,7 @@ while game: # game loop
                                 break
                         options_ptr[0]['store'][0] = options_ptr[1]['ptr']
                     elif menu_ptr['ptr'] == 3:
-                        game = False
+                        game_running = False
                 ui.process_menu_commands({'dec':keys[K_UP], 'inc':keys[K_DOWN]}, menu_ptr)
 
     elif game_state == OPTIONS_MENU:
@@ -143,7 +156,7 @@ while game: # game loop
         display.blit(dark_overlay, (0,0))
         print_text(font, display, "Options", display.get_width()/2, -25, (255,255,255), center=True, scale=4)
         opt_labels = [f"Resolution: {new_mode[0]}x{new_mode[1]}", f"Fullscreen: {fullscreen}", f"FPS Limit: {menu_lim}", "Back"]
-        draw_menu(display, font, opt_labels, options_ptr[0]['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
+        ui.draw_menu(display, font, opt_labels, options_ptr[0]['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
 
         if options_ptr[0]['ptr'] == 0:
             options_ptr[1]['lim'] = len(video_modes)
@@ -165,7 +178,7 @@ while game: # game loop
 
         for event in pygame.event.get():
             if event.type == QUIT:
-                game = False
+                game_running = False
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
                 if keys[K_RETURN]:
@@ -184,8 +197,6 @@ while game: # game loop
                     if options_ptr[0]['ptr'] == 3:
                         game_state = MAIN_MENU
                 ui.process_menu_commands([{'dec':keys[K_UP], 'inc':keys[K_DOWN]}, {'dec':keys[K_LEFT], 'inc':keys[K_RIGHT]}], options_ptr)
-
-        print_text(font, display, f"{options_ptr[0]['store']}", display.get_width()/2, 0, (255,255,255), center=True, scale=1)
     elif game_state == GAME_RUNNING:
         loopBackground(display, bg, dt_value(ms, 1.5), player_y_momentum, (moving_left, moving_right))
         time_acc = anim.update(anim_state, time_acc)
@@ -195,9 +206,8 @@ while game: # game loop
 
         player_movement, player_y_momentum = move_player(moving_left, moving_right, blocked_left, blocked_right, player_y_momentum, global_camera, player, anim_state, ms)
 
-        mouse_pos = pygame.mouse.get_pos()
-
-        pygame.draw.rect(display, (255, 0, 0), (mouse_pos[0]/(screen.get_width()/display.get_width()), mouse_pos[1]/(screen.get_height()/display.get_height()), 5, 5))
+        #mouse_pos = pygame.mouse.get_pos()
+        #pygame.draw.rect(display, (255, 0, 0), (mouse_pos[0]/(screen.get_width()/display.get_width()), mouse_pos[1]/(screen.get_height()/display.get_height()), 5, 5))
 
         player_rect, collisions = move(player_rect, player_movement, tile_rects)
 
@@ -240,7 +250,7 @@ while game: # game loop
 
         for event in pygame.event.get(): # event loop
             if event.type == QUIT: # check for window quit
-                game = False
+                game_running = False
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
                 if keys[K_RIGHT]:
@@ -303,11 +313,10 @@ while game: # game loop
 
         smooth_camera(global_camera, player_rect, display, moving_right, moving_left, jumping)
 
-    surf = pygame.transform.scale(display, [screen.get_width(), screen.get_height()])
-    screen.blit(surf, (0, 0))
+    for i in range(250):
+        display.blit(scan, (0, i*2))
+    game.draw(display, screen)
     ms = clock.tick(fps_limit)
     time_acc += ms
 
-    pygame.display.update()
-
-pygame.quit()
+game.deinit()
