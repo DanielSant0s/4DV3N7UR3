@@ -116,8 +116,8 @@ while game_running: # game loop
         main_labels = ["Start Game", "Options", "Creator", "Exit"]
         ui.draw_menu(display, font, main_labels, menu_ptr['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
         
-        for event in pygame.event.get(): # event loop
-            if event.type == QUIT: # check for window quit
+        for event in pygame.event.get():
+            if event.type == QUIT:
                 game_running = False
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
@@ -241,9 +241,7 @@ while game_running: # game loop
             else:
                 blocked_right = False
 
-            print_text(font, display, f"Player coordinates: {player_rect.x},{player_rect.y}", display.get_width()/2, 5, (255,255,255), center=True)
-
-            player_y_momentum, attack_cooldown = process_enemy_ai(cyborg, cyborg_rect, cyborg_state, player, player_rect, anim_state, player_y_momentum, life, cyborg_moves, cyborg_blocks, attack_cooldown, ms, game_hud)
+            player_y_momentum, attack_cooldown, life = process_enemy_ai(cyborg, cyborg_rect, cyborg_state, player, player_rect, anim_state, player_y_momentum, life, cyborg_moves, cyborg_blocks, attack_cooldown, ms, game_hud)
 
             smooth_camera(global_camera, player_rect, display, moving_right, moving_left, jumping)
 
@@ -318,6 +316,8 @@ while game_running: # game loop
         player_rect = draw_char(display, player_rect, global_camera, anim_state)
         cyborg_rect = draw_char(display, cyborg_rect, global_camera, cyborg_state)
         hud.render(display, game_hud, 10, 10)
+        print_text(font, display, f"Player coordinates: {player_rect.x},{player_rect.y}", display.get_width()/2, 5, (255,255,255), center=True)
+
 
         if game_paused:
             player_y_momentum = 0

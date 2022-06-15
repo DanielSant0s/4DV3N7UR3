@@ -151,4 +151,4 @@ def process_enemy_ai(enemy, enemy_rect, enemy_state, player, player_rect, player
         if (enemy_state['prog'] == enemy_state['lim']-1 and enemy_state['side'] == RIGHT) or (enemy_state['prog'] == 1 and enemy_state['side'] == LEFT):
             anim.change(enemy, enemy_state, 'run')
 
-    return player_y_momentum, attack_cooldown
+    return player_y_momentum, attack_cooldown, life

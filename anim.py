@@ -15,6 +15,8 @@ def change(char, state, anim, side=None):
         state['side'] = side
     if state['side'] == LEFT:
         state['prog'] = char[anim]['frames']-1
+        if char[anim]['frames'] == 2:
+            state['prog'] = 0
     else:
         state['prog'] = 0
     state['lim'] = char[anim]['frames']
