@@ -6,12 +6,11 @@ from char_system import *
 from simplygame import *
 from consts import *
 import game
-import hud
 import ui
 
 clock, screen, display = game.init('4DV3N7UR3', 0, 0)
 
-scan = new_rectEX(display.get_width(), 1, (0,0,0,10))
+scan = new_rectEX(display.get_width(), 1, (20,0,100,25))
 
 global_camera = [-180.0, -100.0]
 
@@ -66,6 +65,8 @@ time_acc = 0
 time_acc2 = 0
 attack_cooldown = 0
 
+game_paused = False
+
 anim_state = {'sprite': player['idle']['sprite'], 'prog': 0, 'lim': player['idle']['frames'], 'speed': player['idle']['speed'], 'side': RIGHT}
 cyborg_state = {'sprite': cyborg['idle']['sprite'], 'prog': 0, 'lim': cyborg['idle']['frames'], 'speed': cyborg['idle']['speed'], 'side': RIGHT}
 
@@ -97,6 +98,8 @@ menu_ptr = {'ptr': 0, 'lim': 4, 'store':None}
 options_ptr = [{'ptr': 0, 'lim': 4, 'store':[0,1,0,0]}, {'ptr': 0, 'lim': 7, 'store':None}]
 
 new_mode = (screen.get_width(),screen.get_height())
+
+tile_rects = []
 
 game_running = True
 
@@ -186,148 +189,113 @@ while game_running: # game loop
                         game_state = MAIN_MENU
                 ui.process_menu_commands([{'dec':keys[K_UP], 'inc':keys[K_DOWN]}, {'dec':keys[K_LEFT], 'inc':keys[K_RIGHT]}], options_ptr)
     elif game_state == GAME_RUNNING:
-        loopBackground(display, bg, dt_value(ms, 1.5), player_y_momentum, (moving_left, moving_right))
-        time_acc = anim.update(anim_state, time_acc)
-        time_acc2 = anim.update(cyborg_state, time_acc2)
-        tile_rects = render_map(display, tilelist, TILE_SIZE, game_map, global_camera)
+        if not game_paused:
+            time_acc = anim.update(anim_state, time_acc)
+            time_acc2 = anim.update(cyborg_state, time_acc2)
 
-        hud.render(display, game_hud, 10, 10)
+            cyborg_movement, cyborg_y_momentum = move_char(cyborg_moves, cyborg_y_momentum, cyborg, cyborg_state, ms)
 
-        cyborg_movement, cyborg_y_momentum = move_char(cyborg_moves, cyborg_y_momentum, cyborg, cyborg_state, ms)
+            player_movement, player_y_momentum = move_player(moving_left, moving_right, blocked_left, blocked_right, player_y_momentum, global_camera, player, anim_state, ms)
 
-        player_movement, player_y_momentum = move_player(moving_left, moving_right, blocked_left, blocked_right, player_y_momentum, global_camera, player, anim_state, ms)
+            #mouse_pos = pygame.mouse.get_pos()
+            #pygame.draw.rect(display, (255, 0, 0), (mouse_pos[0]/(screen.get_width()/display.get_width()), mouse_pos[1]/(screen.get_height()/display.get_height()), 5, 5))
 
-        #mouse_pos = pygame.mouse.get_pos()
-        #pygame.draw.rect(display, (255, 0, 0), (mouse_pos[0]/(screen.get_width()/display.get_width()), mouse_pos[1]/(screen.get_height()/display.get_height()), 5, 5))
+            player_rect, collisions = move(player_rect, player_movement, tile_rects)
 
-        player_rect, collisions = move(player_rect, player_movement, tile_rects)
+            cyborg_rect, e_collisions = move(cyborg_rect, cyborg_movement, tile_rects)
 
-        cyborg_rect, e_collisions = move(cyborg_rect, cyborg_movement, tile_rects)
+            cyborg_y_momentum, cyborg_air_timer = proccess_char_collisions(e_collisions, cyborg, cyborg_state, cyborg_y_momentum, cyborg_air_timer, cyborg_blocks, cyborg_moves)
 
-        if cyborg_blocks[0] == True:
-            cyborg_moves[0] = False
-            cyborg_moves[1] = True
-            cyborg_state['side'] = RIGHT
-        elif cyborg_blocks[1] == True:
-            cyborg_moves[0] = True
-            cyborg_moves[1] = False
-            cyborg_state['side'] = LEFT
+            if collisions['bottom']:
+                jump_mode = 0
+                if anim_state['sprite'] == player['jump']['sprite']:
+                    if moving_right or moving_left:
+                        anim.change(player, anim_state, 'run')
+                    else:
+                        anim.change(player, anim_state, 'idle')
+                player_y_momentum = 0
+                if life_lost > 0:
+                    hud.update(game_hud, (int(life), 100, 100))
+                    life, life_lost = lose_life(life, life_lost)
+                air_timer = 0
+                dashd = False
+                jumping = False
+            else:
+                air_timer += 1
 
-        cyborg_y_momentum, cyborg_air_timer = proccess_char_collisions(e_collisions, cyborg, cyborg_state, cyborg_y_momentum, cyborg_air_timer, cyborg_blocks, cyborg_moves)
+            if air_timer > 120:
+                    life_lost += 0.3
 
-        if collisions['bottom']:
-            jump_mode = 0
-            if anim_state['sprite'] == player['jump']['sprite']:
-                if moving_right or moving_left:
-                    anim.change(player, anim_state, 'run')
-                else:
-                    anim.change(player, anim_state, 'idle')
-            player_y_momentum = 0
-            if life_lost > 0:
-                hud.update(game_hud, (int(life), 100, 100))
-                life, life_lost = lose_life(life, life_lost)
-            air_timer = 0
-            dashd = False
-            jumping = False
-        else:
-            air_timer += 1
+            if collisions['left']:
+                blocked_left = True
+                if player_y_momentum >= 0:
+                    moving_left = False
+                    global_camera[0] -= dt_value(ms, 2.0)
+            else:
+                blocked_left = False
+            if collisions['right']:
+                blocked_right = True
+                if player_y_momentum >= 0:
+                    moving_right = False
+                    global_camera[0] += dt_value(ms, 2.0)
+            else:
+                blocked_right = False
 
-        if air_timer > 120:
-                life_lost += 0.3
+            print_text(font, display, f"Player coordinates: {player_rect.x},{player_rect.y}", display.get_width()/2, 5, (255,255,255), center=True)
 
-        if collisions['left']:
-            blocked_left = True
-            if player_y_momentum >= 0:
-                moving_left = False
-                global_camera[0] -= dt_value(ms, 2.0)
-        else:
-            blocked_left = False
-        if collisions['right']:
-            blocked_right = True
-            if player_y_momentum >= 0:
-                moving_right = False
-                global_camera[0] += dt_value(ms, 2.0)
-        else:
-            blocked_right = False
+            player_y_momentum, attack_cooldown = process_enemy_ai(cyborg, cyborg_rect, cyborg_state, player, player_rect, anim_state, player_y_momentum, life, cyborg_moves, cyborg_blocks, attack_cooldown, ms, game_hud)
 
-        print_text(font, display, f"Player coordinates: {player_rect.x},{player_rect.y}", display.get_width()/2, 5, (255,255,255), center=True)
-
-        attack_cooldown -= ms
-        if test_rect_rect(player_rect, cyborg_rect):
-            if attack_cooldown <= 0:
-                anim.change(cyborg, cyborg_state, 'run_attack')
-                anim.change(player, anim_state, 'hurt')
-                hud.update(game_hud, (int(life), 100, 100))
-                life, life_lost = lose_life(life, 15)
-                if cyborg_moves[0] == True:
-                    player_rect.x -= 30
-                elif cyborg_moves[1] == True:
-                    player_rect.x += 30
-                player_y_momentum -= 2.5
-                attack_cooldown = 2000
-        elif cyborg_rect.y == player_rect.y and attack_cooldown <= 0:
-            if cyborg_rect.x < player_rect.x:
-                cyborg_moves[1] = True
-                cyborg_moves[0] = False
-                cyborg_state['side'] = RIGHT
-            elif cyborg_rect.x > player_rect.x:
-                cyborg_moves[1] = False
-                cyborg_moves[0] = True
-                cyborg_state['side'] = LEFT
-
-        if cyborg['run_attack']['sprite'] == cyborg_state['sprite']:
-            if (cyborg_state['prog'] == cyborg_state['lim']-1 and cyborg_state['side'] == RIGHT) or (cyborg_state['prog'] == 0 and cyborg_state['side'] == LEFT):
-                anim.change(cyborg, cyborg_state, 'run')
-
-        player_rect = draw_char(display, player_rect, global_camera, anim_state)
-        cyborg_rect = draw_char(display, cyborg_rect, global_camera, cyborg_state)
+            smooth_camera(global_camera, player_rect, display, moving_right, moving_left, jumping)
 
         for event in pygame.event.get(): # event loop
             if event.type == QUIT: # check for window quit
                 game_running = False
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
-                if keys[K_RIGHT]:
-                    moving_right = True
-                    anim.change(player, anim_state, 'run', RIGHT)
+                if not game_paused:
+                    if keys[K_RIGHT]:
+                        moving_right = True
+                        anim.change(player, anim_state, 'run', RIGHT)
+                        if keys[K_LEFT]:
+                            moving_left = True
+                            anim.change(player, anim_state, 'run', LEFT)
                     if keys[K_LEFT]:
                         moving_left = True
                         anim.change(player, anim_state, 'run', LEFT)
-                if keys[K_LEFT]:
-                    moving_left = True
-                    anim.change(player, anim_state, 'run', LEFT)
-                    if keys[K_RIGHT]:
-                        moving_left = True
-                        anim.change(player, anim_state, 'run', RIGHT)
-                if keys[K_BACKSPACE]:
-                    global_camera = [player_rect.x-100, player_rect.y-100]
-                if keys[K_UP]:
-                    if air_timer > 15 and not dashd:
-                        dashd = True
-                        jumping = True
-                        anim.change(player, anim_state, 'doublejump')
-                        player_y_momentum = -6.5
-                    else:
-                        jumping = True
-                        anim.change(player, anim_state, 'jump')
-                        if air_timer < 6:
-                            player_y_momentum = -6
-                if keys[K_LALT] and keys[K_RETURN]:
-                    if fullscreen:
-                        screen = pygame.display.set_mode((640,480),0,32)
-                        fullscreen = False
-                        display = pygame.Surface((250*(640/480), 250))
+                        if keys[K_RIGHT]:
+                            moving_left = True
+                            anim.change(player, anim_state, 'run', RIGHT)
+                    if keys[K_BACKSPACE]:
+                        global_camera = [player_rect.x-100, player_rect.y-100]
+                    if keys[K_UP]:
+                        if air_timer > 15 and not dashd:
+                            dashd = True
+                            jumping = True
+                            anim.change(player, anim_state, 'doublejump')
+                            player_y_momentum = -6.5
+                        else:
+                            jumping = True
+                            anim.change(player, anim_state, 'jump')
+                            if air_timer < 6:
+                                player_y_momentum = -6
+                    if keys[K_LALT] and keys[K_RETURN]:
+                        if fullscreen:
+                            screen = pygame.display.set_mode((640,480),0,32)
+                            fullscreen = False
+                            display = pygame.Surface((250*(640/480), 250))
 
-                    else:
-                        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-                        fullscreen = True
-                        display = pygame.Surface((250*(screen.get_width()/screen.get_height()), 250))
-                if keys[K_LCTRL]:
-                    anim.change(player, anim_state, 'attack1')
-                if keys[K_z]:
-                    anim.change(player, anim_state, 'attack2')
-                if keys[K_x]:
-                    anim.change(player, anim_state, 'attack3')
+                        else:
+                            screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                            fullscreen = True
+                            display = pygame.Surface((250*(screen.get_width()/screen.get_height()), 250))
+                    if keys[K_LCTRL]:
+                        anim.change(player, anim_state, 'attack1')
+                    if keys[K_z]:
+                        anim.change(player, anim_state, 'attack2')
+                    if keys[K_x]:
+                        anim.change(player, anim_state, 'attack3')
+                if keys[K_ESCAPE]:
+                    game_paused = not game_paused
 
             if event.type == KEYUP:
                 if event.key == K_RIGHT:
@@ -345,9 +313,18 @@ while game_running: # game loop
                 if event.key == K_LCTRL or event.key == K_x or event.key == K_z:
                     anim.change(player, anim_state, 'idle')
 
-        smooth_camera(global_camera, player_rect, display, moving_right, moving_left, jumping)
+        loopBackground(display, bg, dt_value(ms, 1.5), player_y_momentum, (moving_left, moving_right))
+        tile_rects = render_map(display, tilelist, TILE_SIZE, game_map, global_camera)
+        player_rect = draw_char(display, player_rect, global_camera, anim_state)
+        cyborg_rect = draw_char(display, cyborg_rect, global_camera, cyborg_state)
+        hud.render(display, game_hud, 10, 10)
 
-    for i in range(250):
+        if game_paused:
+            player_y_momentum = 0
+            moving_left, moving_right = False, False
+            display = blur(display, 3.5)
+
+    for i in range(125):
         display.blit(scan, (0, i*2))
     game.draw(display, screen)
     ms = clock.tick(fps_limit)

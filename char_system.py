@@ -6,6 +6,7 @@ from map_system import *
 from consts import *
 
 import anim
+import hud
 
 def move(rect, movement, tiles):
     collision_types = {'top': False, 'bottom': False, 'right': False, 'left': False}
@@ -29,7 +30,6 @@ def move(rect, movement, tiles):
             collision_types['top'] = True
     return rect, collision_types
 
-#Função que recebe a quantidade de vida e a vida perdida, e então desconta a vida perdida do total de vida, zera o contador de vida perdida e retorna o total de vida
 def lose_life(life, life_lost):
     life = life - life_lost
     life_lost = 0
@@ -112,3 +112,43 @@ def move_char(move_list, y_momentum, char, state, ms):
         if state['sprite'] != char['jump']['sprite']:
             anim.change(char, state, 'jump')
     return char_movement, y_momentum
+
+def process_enemy_ai(enemy, enemy_rect, enemy_state, player, player_rect, player_state, player_y_momentum, life, move_list, block_list, attack_cooldown, ms, g_hud):
+    if block_list[0] == True:
+        move_list[0] = False
+        move_list[1] = True
+        enemy_state['side'] = RIGHT
+    elif block_list[1] == True:
+        move_list[0] = True
+        move_list[1] = False
+        enemy_state['side'] = LEFT
+
+    attack_cooldown -= ms
+    if test_rect_rect(player_rect, enemy_rect):
+        if attack_cooldown <= 0:
+            anim.change(enemy, enemy_state, 'run_attack')
+            anim.change(player, player_state, 'hurt')
+            hud.update(g_hud, (int(life), 100, 100))
+            life = lose_life(life, 15)[0]
+            if move_list[0] == True:
+                player_rect.x -= 30
+            elif move_list[1] == True:
+                player_rect.x += 30
+            player_y_momentum -= 2.5
+            attack_cooldown = 2000
+
+    elif enemy_rect.y == player_rect.y and attack_cooldown <= 0:
+        if enemy_rect.x < player_rect.x:
+            move_list[1] = True
+            move_list[0] = False
+            enemy_state['side'] = RIGHT
+        elif enemy_rect.x > player_rect.x:
+            move_list[1] = False
+            move_list[0] = True
+            enemy_state['side'] = LEFT
+
+    if enemy['run_attack']['sprite'] == enemy_state['sprite']:
+        if (enemy_state['prog'] == enemy_state['lim']-1 and enemy_state['side'] == RIGHT) or (enemy_state['prog'] == 1 and enemy_state['side'] == LEFT):
+            anim.change(enemy, enemy_state, 'run')
+
+    return player_y_momentum, attack_cooldown

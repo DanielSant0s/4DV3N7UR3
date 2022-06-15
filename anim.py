@@ -13,7 +13,10 @@ def new(char_name, speed_list, frames_list):
 def change(char, state, anim, side=None):
     if side is not None:
         state['side'] = side
-    state['prog'] = 0
+    if state['side'] == LEFT:
+        state['prog'] = char[anim]['frames']-1
+    else:
+        state['prog'] = 0
     state['lim'] = char[anim]['frames']
     state['speed'] = char[anim]['speed']
     state['sprite'] = char[anim]['sprite']
