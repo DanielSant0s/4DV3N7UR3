@@ -1,5 +1,4 @@
 from simplygame import *
-from consts import *
 
 def new(char_name, speed_list, frames_list):
     anim_dict = {}

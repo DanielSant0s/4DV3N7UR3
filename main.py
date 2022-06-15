@@ -1,10 +1,5 @@
-import pygame
-from pygame.locals import *
-
-from map_system import *
 from char_system import *
 from simplygame import *
-from consts import *
 import game
 import ui
 
@@ -26,7 +21,7 @@ tilelist = load_texture_dictionary('Map/Tiles/')
 TILE_SIZE = 32
 
 frames_lst = [6, 8, 8, 6, 6, 6, 2, 4, 4, 6, 6, 6]
-speeds_lst = [8.0, 8.0, 8.0, 1.0, 1.0, 4.0, 4.0, 1.0, 1.0, 1.0, 4.0, 8.0]
+speeds_lst = [8.0, 8.0, 8.0, 1.0, 1.0, 4.0, 4.0, 1.0, 1.0, 1.0, 4.0, 4.0]
 
 player = anim.new('Punk', speeds_lst, frames_lst)
 biker = anim.new('Biker', speeds_lst, frames_lst)
@@ -50,10 +45,8 @@ game_map = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 cyborg_moves = [False, True]
 cyborg_blocks = [False, False]
-moving_right = False
-moving_left = False
-blocked_right = False
-blocked_left = False
+player_moves = [False, False]
+player_blocks = [False, False]
 
 player_y_momentum = 0
 cyborg_y_momentum = 0
@@ -64,6 +57,7 @@ ms = 0
 time_acc = 0
 time_acc2 = 0
 attack_cooldown = 0
+atk_lock = False
 
 game_paused = False
 
@@ -79,6 +73,8 @@ jumping = False
 
 life = 100
 life_lost = 0
+
+cyborg_life = 100
 
 mouse_pos = pygame.mouse.get_pos()
 
@@ -111,7 +107,7 @@ while game_running: # game loop
         display = blur(display, 2.8)
 
         display.blit(dark_overlay, (0,0))
-        print_text(font, display, "4DV3N7UR3", display.get_width()/2, -25, (255,255,255), center=True, scale=4)
+        print_text(font, display, "4DV3N7UR3", display.get_width()/2, -25, (255,255,255), scale=4)
 
         main_labels = ["Start Game", "Options", "Creator", "Exit"]
         ui.draw_menu(display, font, main_labels, menu_ptr['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
@@ -145,7 +141,7 @@ while game_running: # game loop
         display = blur(display, 2.8)
 
         display.blit(dark_overlay, (0,0))
-        print_text(font, display, "Options", display.get_width()/2, -25, (255,255,255), center=True, scale=4)
+        print_text(font, display, "Options", display.get_width()/2, -25, (255,255,255), scale=4)
         opt_labels = [f"Resolution: {new_mode[0]}x{new_mode[1]}", f"Fullscreen: {fullscreen}", f"FPS Limit: {menu_lim}", "Back"]
         ui.draw_menu(display, font, opt_labels, options_ptr[0]['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
 
@@ -195,7 +191,7 @@ while game_running: # game loop
 
             cyborg_movement, cyborg_y_momentum = move_char(cyborg_moves, cyborg_y_momentum, cyborg, cyborg_state, ms)
 
-            player_movement, player_y_momentum = move_player(moving_left, moving_right, blocked_left, blocked_right, player_y_momentum, global_camera, player, anim_state, ms)
+            player_movement, player_y_momentum = move_player(player_moves[0], player_moves[1], player_blocks[0], player_blocks[1], player_y_momentum, global_camera, player, anim_state, ms)
 
             #mouse_pos = pygame.mouse.get_pos()
             #pygame.draw.rect(display, (255, 0, 0), (mouse_pos[0]/(screen.get_width()/display.get_width()), mouse_pos[1]/(screen.get_height()/display.get_height()), 5, 5))
@@ -203,13 +199,12 @@ while game_running: # game loop
             player_rect, collisions = move(player_rect, player_movement, tile_rects)
 
             cyborg_rect, e_collisions = move(cyborg_rect, cyborg_movement, tile_rects)
-
             cyborg_y_momentum, cyborg_air_timer = proccess_char_collisions(e_collisions, cyborg, cyborg_state, cyborg_y_momentum, cyborg_air_timer, cyborg_blocks, cyborg_moves)
 
             if collisions['bottom']:
                 jump_mode = 0
                 if anim_state['sprite'] == player['jump']['sprite']:
-                    if moving_right or moving_left:
+                    if player_moves[1] or player_moves[0]:
                         anim.change(player, anim_state, 'run')
                     else:
                         anim.change(player, anim_state, 'idle')
@@ -227,23 +222,27 @@ while game_running: # game loop
                     life_lost += 0.3
 
             if collisions['left']:
-                blocked_left = True
+                player_blocks[0] = True
                 if player_y_momentum >= 0:
-                    moving_left = False
+                    player_moves[0] = False
                     global_camera[0] -= dt_value(ms, 2.0)
             else:
-                blocked_left = False
+                player_blocks[0] = False
             if collisions['right']:
-                blocked_right = True
+                player_blocks[1] = True
                 if player_y_momentum >= 0:
-                    moving_right = False
+                    player_moves[1] = False
                     global_camera[0] += dt_value(ms, 2.0)
             else:
-                blocked_right = False
+                player_blocks[1] = False
 
-            player_y_momentum, attack_cooldown, life = process_enemy_ai(cyborg, cyborg_rect, cyborg_state, player, player_rect, anim_state, player_y_momentum, life, cyborg_moves, cyborg_blocks, attack_cooldown, ms, game_hud)
+            if cyborg_life > 0:
+                player_y_momentum, attack_cooldown, life, atk_lock = process_enemy_ai([cyborg, cyborg_rect, cyborg_state], player, player_rect, anim_state, player_y_momentum, life, cyborg_moves, cyborg_blocks, attack_cooldown, ms, game_hud, atk_lock)
+                atk_lock = False
+            else:
+                anim.change(cyborg, cyborg_state, 'death')
 
-            smooth_camera(global_camera, player_rect, display, moving_right, moving_left, jumping)
+            smooth_camera(global_camera, player_rect, display, player_moves[1], player_moves[0], jumping)
 
         for event in pygame.event.get(): # event loop
             if event.type == QUIT: # check for window quit
@@ -252,16 +251,16 @@ while game_running: # game loop
                 keys = pygame.key.get_pressed()
                 if not game_paused:
                     if keys[K_RIGHT]:
-                        moving_right = True
+                        player_moves[1] = True
                         anim.change(player, anim_state, 'run', RIGHT)
                         if keys[K_LEFT]:
-                            moving_left = True
+                            player_moves[0] = True
                             anim.change(player, anim_state, 'run', LEFT)
                     if keys[K_LEFT]:
-                        moving_left = True
+                        player_moves[0] = True
                         anim.change(player, anim_state, 'run', LEFT)
                         if keys[K_RIGHT]:
-                            moving_left = True
+                            player_moves[0] = True
                             anim.change(player, anim_state, 'run', RIGHT)
                     if keys[K_BACKSPACE]:
                         global_camera = [player_rect.x-100, player_rect.y-100]
@@ -287,7 +286,17 @@ while game_running: # game loop
                             fullscreen = True
                             display = pygame.Surface((250*(screen.get_width()/screen.get_height()), 250))
                     if keys[K_LCTRL]:
-                        anim.change(player, anim_state, 'attack1')
+                        if test_rect_rect(player_rect, cyborg_rect) and cyborg_life > 0:
+                            anim.change(cyborg, cyborg_state, 'hurt')
+                            cyborg_life = lose_life(cyborg_life, 15)[0]
+                            cyborg_moves[0] = False
+                            cyborg_moves[1] = False
+                            if cyborg_moves[0] == True:
+                                cyborg_rect.x -= 30
+                            elif cyborg_moves[1] == True:
+                                cyborg_rect.x += 30
+                            cyborg_y_momentum -= 2.5
+                        anim.change(player, anim_state, 'run_attack')
                     if keys[K_z]:
                         anim.change(player, anim_state, 'attack2')
                     if keys[K_x]:
@@ -297,13 +306,13 @@ while game_running: # game loop
 
             if event.type == KEYUP:
                 if event.key == K_RIGHT:
-                    moving_right = False
+                    player_moves[1] = False
                     if not jumping:
                         anim.change(player, anim_state, 'idle', RIGHT)
                     if keys[K_LEFT]:
                         anim.change(player, anim_state, 'run', LEFT)
                 if event.key == K_LEFT:
-                    moving_left = False
+                    player_moves[0] = False
                     if not jumping:
                         anim.change(player, anim_state, 'idle', LEFT)
                     if keys[K_RIGHT]:
@@ -311,17 +320,18 @@ while game_running: # game loop
                 if event.key == K_LCTRL or event.key == K_x or event.key == K_z:
                     anim.change(player, anim_state, 'idle')
 
-        loopBackground(display, bg, dt_value(ms, 1.5), player_y_momentum, (moving_left, moving_right))
+        loopBackground(display, bg, dt_value(ms, 1.5), player_y_momentum, (player_moves[0], player_moves[1]))
         tile_rects = render_map(display, tilelist, TILE_SIZE, game_map, global_camera)
         player_rect = draw_char(display, player_rect, global_camera, anim_state)
+        print_text(font, display, f"{cyborg_life}", World2Screen(cyborg_rect, global_camera)[0]+cyborg_rect.width/(4 if cyborg_state['side'] == LEFT else 1.35), World2Screen(cyborg_rect, global_camera)[1], (255,255,255), scale=0.8)
+
         cyborg_rect = draw_char(display, cyborg_rect, global_camera, cyborg_state)
         hud.render(display, game_hud, 10, 10)
-        print_text(font, display, f"Player coordinates: {player_rect.x},{player_rect.y}", display.get_width()/2, 5, (255,255,255), center=True)
-
+        print_text(font, display, f"Player coordinates: {player_rect.x},{player_rect.y}", display.get_width()/2, 5, (255,255,255))
 
         if game_paused:
             player_y_momentum = 0
-            moving_left, moving_right = False, False
+            player_moves[0], player_moves[1] = False, False
             display = blur(display, 3.5)
 
     for i in range(125):

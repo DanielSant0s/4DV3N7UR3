@@ -1,5 +1,6 @@
 import pygame
 from pygame.locals import *
+from consts import *
 import sys
 import os
 import io
@@ -9,7 +10,7 @@ def get_between(s, first, last):
     end = s.index(last, start)
     return s[start:end]
 
-def print_text(font, display, text, x, y, color=(255,255,255), bg_color=None, alpha=255, scale=1.0, center=False):
+def print_text(font, display, text, x, y, color=(255,255,255), bg_color=None, alpha=255, scale=1.0, center=True):
     str_list = []
     temp_i = -1
     for i in range(len(text)):
@@ -40,10 +41,8 @@ def get_text_size(font, text, scale=1.0):
 
 def load_texture_dictionary(path, scale=1.0):
     tex_dict = []
-    print('Loading tiles from: ' + path)
     flist = sorted(os.listdir(path))
     for fname in flist:
-        print('Loading: ' + fname)
         tex_dict.append(pygame.image.load(path + fname).convert_alpha())
         if scale != 1.0:
             tex_dict[-1] = pygame.transform.scale(tex_dict[-1], ((tex_dict[-1].get_width() * scale), (tex_dict[-1].get_height() * scale)))
