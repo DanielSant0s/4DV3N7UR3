@@ -111,17 +111,17 @@ def process_enemy_ai(enemy, player, player_rect, player_state, player_y_momentum
     enemy['cooldown'] -= ms
 
     if enemy['blocks'][0] == True:
-        if enemy['state']['sprite'] == enemy['anim']['idle']['sprite']:
-            anim.change(enemy['anim'], enemy['state'], 'run')
         enemy['moves'][0] = False
         enemy['moves'][1] = True
         enemy['state']['side'] = RIGHT
     elif enemy['blocks'][1] == True:
-        if enemy['state']['sprite'] == enemy['anim']['idle']['sprite']:
-            anim.change(enemy['anim'], enemy['state'], 'run')
         enemy['moves'][0] = True
         enemy['moves'][1] = False
         enemy['state']['side'] = LEFT
+
+    if enemy['moves'][0] or enemy['moves'][1]:
+        if enemy['state']['sprite'] == enemy['anim']['idle']['sprite']:
+            anim.change(enemy['anim'], enemy['state'], 'run')
 
     if test_rect_rect(player_rect, enemy['rect']):
         if enemy['cooldown'] <= 0 and not enemy['atk_lock'] and life > 0:

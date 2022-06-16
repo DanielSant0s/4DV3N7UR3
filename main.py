@@ -249,8 +249,8 @@ while game_running:
 
             smooth_camera(global_camera, player_rect, display, player_moves[1], player_moves[0], jumping)
 
-        for event in pygame.event.get(): # event loop
-            if event.type == QUIT: # check for window quit
+        for event in pygame.event.get():
+            if event.type == QUIT:
                 game_running = False
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
