@@ -1,9 +1,7 @@
 import pygame
 from pygame.locals import *
 from consts import *
-import sys
 import os
-import io
 
 def get_between(s, first, last):
     start = s.index(first) + len(first)
@@ -59,9 +57,7 @@ def blur(surface, qt):
     radius = 1.0/float(qt)
     size = surface.get_size()
     scale_size = (int(size[0]*radius), int(size[1]*radius))
-    surf = pygame.transform.smoothscale(surface, scale_size)
-    surf = pygame.transform.smoothscale(surf, size)
-    return surf
+    return pygame.transform.smoothscale(pygame.transform.smoothscale(surface, scale_size), size)
 
 def new_rectEX(width, height, color):
     rect = pygame.Surface((width,height), pygame.SRCALPHA)

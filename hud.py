@@ -23,9 +23,8 @@ def render(display, rect_dict, x, y):
         chunk_width += rect_dict[i]['bg'].get_height()
 
 def update(rect_dict, val_list):
-    global color_list
     for i in range(len(rect_dict)):
-        w = rect_dict[i]['cur'].get_width() * val_list[i]/100
-        rect_dict[i]['cur'] = pygame.transform.scale(rect_dict[i]['cur'], (w, rect_dict[i]['cur'].get_height()))
-        rect_dict[i]['max'] = pygame.Surface((round(100-w),rect_dict[i]['max'].get_height()), pygame.SRCALPHA)
+        rect_dict[i]['cur'] = pygame.Surface(((0 if val_list[i] <= 0 else val_list[i]),rect_dict[i]['cur'].get_height()), pygame.SRCALPHA)
+        rect_dict[i]['cur'].fill(rect_dict[i]['color'])
+        rect_dict[i]['max'] = pygame.Surface(((100 if val_list[i] <= 0 else 100-val_list[i]),rect_dict[i]['max'].get_height()), pygame.SRCALPHA)
         rect_dict[i]['max'].fill(rect_dict[i]['color'])

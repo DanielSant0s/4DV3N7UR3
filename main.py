@@ -30,7 +30,12 @@ player_moves = [False, False]
 player_blocks = [False, False]
 player_y_momentum = 0
 air_timer = 0
-time_acc = 0
+player_timers = [0, 0, 0, 0, 0]
+#timer_acc - 0
+#atk1_timer - 1
+#atk2_timer - 2
+#atk3_timer - 3
+#dash_timer - 4
 dashd = False
 jumping = False
 life = 100
@@ -75,7 +80,7 @@ pygame.mixer.music.load("Sfx/galactic-trek.wav")
 pygame.mixer.music.set_volume(0.3)
 pygame.mixer.music.play(-1)
 
-while game_running: # game loop
+while game_running:
     if game_state == MAIN_MENU:
         loopBackground(display, bg, dt_value(ms, 2.0), 0, (False, True))
         display = blur(display, 2.8)
@@ -181,7 +186,7 @@ while game_running: # game loop
                 enemy['rect'], enemy['collisions'] = move(enemy['rect'], enemy['movement'], tile_rects)
                 proccess_char_collisions(enemy)
 
-            time_acc = anim.update(anim_state, time_acc, life)
+            player_timers[0] = anim.update(anim_state, player_timers[0], life)
             player_movement, player_y_momentum = move_player(player_moves[0], player_moves[1], player_blocks[0], player_blocks[1], player_y_momentum, global_camera, player, anim_state, ms)
             player_rect, collisions = move(player_rect, player_movement, tile_rects)
 
@@ -223,8 +228,8 @@ while game_running: # game loop
             else:
                 player_blocks[1] = False
 
-            if anim_state['sprite'] == player['run_attack']['sprite']:
-                if (anim_state['side'] == RIGHT and anim_state['lim']-1 == anim_state['prog']) or (anim_state['side'] == LEFT and 0 == anim_state['prog']):
+            if anim_state['sprite'] == player['run_attack']['sprite'] or anim_state['sprite'] == player['attack1']['sprite'] or anim_state['sprite'] == player['attack2']['sprite'] or anim_state['sprite'] == player['attack3']['sprite']:
+                if (anim_state['side'] == RIGHT and anim_state['lim']-1 == anim_state['prog']) or (anim_state['side'] == LEFT and 1 == anim_state['prog']):
                     if player_moves[0] or player_moves[1]:
                         anim.change(player, anim_state, 'run')
                     else:
@@ -267,12 +272,13 @@ while game_running: # game loop
                     if keys[K_BACKSPACE]:
                         global_camera = [player_rect.x-100, player_rect.y-100]
                     if keys[K_UP]:
-                        if air_timer > 15 and not dashd:
+                        if air_timer > 15 and not dashd and player_timers[4] > 16384:
                             pygame.mixer.Sound.play(dash_sound)
                             dashd = True
                             jumping = True
                             anim.change(player, anim_state, 'doublejump')
                             player_y_momentum = -6.5
+                            player_timers[4] = 0
                         else:
                             pygame.mixer.Sound.play(jump_sound)
                             jumping = True
@@ -290,18 +296,31 @@ while game_running: # game loop
                             fullscreen = True
                             display = pygame.Surface((250*(screen.get_width()/screen.get_height()), 250))
                     if keys[K_LCTRL]:
-                        pygame.mixer.Sound.play(punch_sound)
                         for enemy in enemies:
                             damage_enemy(player_rect, enemy, 15)
-                        anim.change(player, anim_state, 'run_attack')
+                        pygame.mixer.Sound.play(punch_sound)
+
+                        if player_moves[0] or player_moves[1]:
+                            anim.change(player, anim_state, 'run_attack')
+                        else:
+                            anim.change(player, anim_state, 'attack1')
+
                     if keys[K_z]:
+                        pygame.mixer.Sound.play(punch_sound)
                         anim.change(player, anim_state, 'attack2')
+
                     if keys[K_x]:
-                        anim.change(player, anim_state, 'attack3')
+                        if not player_moves[0] and not player_moves[1] and player_timers[3] > 16384:
+                            for enemy in enemies:
+                                damage_enemy(player_rect, enemy, 50)
+                            pygame.mixer.Sound.play(punch_sound)
+                            anim.change(player, anim_state, 'attack3')
+                            player_timers[3] = 0
+
                 if keys[K_ESCAPE]:
                     game_paused = not game_paused
 
-            if event.type == KEYUP:
+            if event.type == KEYUP and not game_paused and life > 0:
                 if event.key == K_RIGHT:
                     player_moves[1] = False
                     if not jumping:
@@ -333,6 +352,21 @@ while game_running: # game loop
             player_moves[0], player_moves[1] = False, False
             display = blur(display, 3.5)
 
+        player_timers[0] += ms
+
+        if player_timers[4] < 16384:
+            player_timers[4] += ms
+
+        if player_timers[3] < 16384:
+            player_timers[3] += ms
+
+        hud.update(game_hud, (life, player_timers[4]/163.84, player_timers[3]/163.84))
+
+        for enemy in enemies:
+            enemy['time_acc'] += ms
+
+        sfx_acc += ms
+
     elif game_state == GAME_OVER:
         display.fill((0,0,0))
         print_text(font, display, "GAME OVER", display.get_width()/2, -15, (255,255,255), scale=4)
@@ -354,10 +388,4 @@ while game_running: # game loop
 
     ms = clock.tick(fps_limit)
 
-    time_acc += ms
-
-    for enemy in enemies:
-        enemy['time_acc'] += ms
-
-    sfx_acc += ms
 game.deinit()
