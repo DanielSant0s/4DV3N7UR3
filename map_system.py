@@ -50,3 +50,15 @@ def render_map(display, tileset, tile_size, map, camera):
             x += 1
         y += 1
     return tile_rects
+
+def render_objects(display, tileset, tile_size, map, camera):
+    tile_rects = []
+    y = 0
+    for row in map:
+        x = 0
+        for tile in row:
+            tile_coords = Map2Screen([x * tile_size, y * tile_size], camera)
+            if tile != 0:
+                display.blit(tileset[tile-1], tile_coords)
+            x += 1
+        y += 1

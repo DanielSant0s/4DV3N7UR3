@@ -155,7 +155,7 @@ def process_enemy_ai(enemy, player, player_rect, player_state, player_y_momentum
 
 def register_enemy(enemies, char_name, posx, posy, speed_list, frames_list):
     enemy = {}
-    enemy['anim'] = anim.new(char_name, speed_list, frames_list)
+    enemy['anim'] = anim.new(char_name, speed_list, frames_list, True)
     enemy['state'] = {'sprite': enemy['anim']['idle']['sprite'], 'prog': 0, 'lim': enemy['anim']['idle']['frames'], 'speed': enemy['anim']['idle']['speed'], 'side': RIGHT}
     enemy['rect'] = pygame.Rect(posx, posy, enemy['state']['sprite'].get_width()/enemy['state']['lim']/2, enemy['state']['sprite'].get_height())
     enemy['moves'] = [False, True]

@@ -18,6 +18,8 @@ for i in range(len(bg_dict)):
     bg.append({'data':bg_dict[i], 'posx':0, 'posy':display.get_height()-bg_dict[i].get_height(), 'posx2':-(bg_dict[i].get_width()-0.5)})
 
 tilelist = load_texture_dictionary('Map/Tiles/')
+objlist = load_texture_dictionary('Map/Objects/')
+objlist2 = load_texture_dictionary('Map/Objects/')
 TILE_SIZE = 32
 
 frames_lst = [6, 8, 8, 6, 6, 6, 2, 4, 4, 6, 6, 6]
@@ -42,6 +44,9 @@ font = pygame.font.Font('Font/PixeloidMono-1G8ae.ttf', 9)
 enemies = []
 register_enemy(enemies, 'Cyborg', 800, 180, speeds_lst, frames_lst)
 register_enemy(enemies, 'Biker', 900, 180, speeds_lst, frames_lst)
+
+register_enemy(enemies, 'Biker', 1600, 200, speeds_lst, frames_lst)
+register_enemy(enemies, 'Cyborg', 1250, 200, speeds_lst, frames_lst)
 
 ms = 0
 sfx_acc = 0
@@ -100,9 +105,11 @@ while game_running:
                         anim.change(player, anim_state, 'idle', RIGHT)
                         player_rect = pygame.Rect(50, 50, anim_state['sprite'].get_width()/anim_state['lim']/2, anim_state['sprite'].get_height())
                         global_camera = [-180.0, -100.0]
-                        hud.update(game_hud, (life, 100, 100))
+                        hud.update(game_hud, (life, 0, 0))
+                        player_timers = [0, 0, 0, 0, 0]
                         for enemy in enemies:
                             enemy['life'] = 100
+                            enemy['time_acc'] = 0
 
                     elif menu_ptr['ptr'] == 1:
                         game_state = OPTIONS_MENU
@@ -335,6 +342,8 @@ while game_running:
 
         loopBackground(display, bg, dt_value(ms, 1.5), player_y_momentum, (player_moves[0], player_moves[1]))
         tile_rects = render_map(display, tilelist, TILE_SIZE, game_map, global_camera)
+        render_objects(display, objlist, TILE_SIZE, game_objs, global_camera)
+        render_objects(display, objlist2, TILE_SIZE, game_objs2, global_camera)
         player_rect = draw_char(display, player_rect, global_camera, anim_state)
 
         for enemy in enemies:
