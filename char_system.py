@@ -49,7 +49,7 @@ def test_rect_rect(p_rect, c_rect):
 def proccess_char_collisions(collisions, char, char_state, char_y_momentum, air_timer, block_list, move_list):
     if collisions['bottom']:
         if char_state['sprite'] == char['jump']['sprite']:
-            if move_list[0] or move_list[1]:
+            if move_list[0] or move_list[1]:	
                 anim.change(char, char_state, 'run')
             else:
                 anim.change(char, char_state, 'idle')

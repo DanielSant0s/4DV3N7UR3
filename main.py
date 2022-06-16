@@ -21,7 +21,7 @@ tilelist = load_texture_dictionary('Map/Tiles/')
 TILE_SIZE = 32
 
 frames_lst = [6, 8, 8, 6, 6, 6, 2, 4, 4, 6, 6, 6]
-speeds_lst = [8.0, 8.0, 8.0, 1.0, 1.0, 4.0, 4.0, 1.0, 1.0, 1.0, 4.0, 4.0]
+speeds_lst = [8.0, 8.0, 8.0, 1.0, 4.0, 4.0, 4.0, 1.0, 1.0, 1.0, 4.0, 4.0]
 
 player = anim.new('Punk', speeds_lst, frames_lst)
 biker = anim.new('Biker', speeds_lst, frames_lst)
@@ -56,6 +56,7 @@ cyborg_air_timer = 0
 ms = 0
 time_acc = 0
 time_acc2 = 0
+sfx_acc = 0
 attack_cooldown = 0
 atk_lock = False
 
@@ -101,6 +102,15 @@ game_running = True
 
 attack = False
 
+dash_sound = pygame.mixer.Sound("Sfx/Jump/Jump__004.wav")
+jump_sound = pygame.mixer.Sound("Sfx/Jump/Jump__002.wav")
+punch_sound = pygame.mixer.Sound("Sfx/Punch2/Punch2__001.wav")
+walk_sound = pygame.mixer.Sound("Sfx/Footstep/Footstep__007.wav")
+
+pygame.mixer.music.load("Sfx/galactic-trek.wav")
+pygame.mixer.music.set_volume(0.3)
+pygame.mixer.music.play(-1)
+
 while game_running: # game loop
     if game_state == MAIN_MENU:
         loopBackground(display, bg, dt_value(ms, 2.0), 0, (False, True))
@@ -119,7 +129,14 @@ while game_running: # game loop
                 keys = pygame.key.get_pressed()
                 if keys[K_RETURN]:
                     if menu_ptr['ptr'] == 0:
+                        pygame.mixer.music.set_volume(0.1)
                         game_state = GAME_RUNNING
+                        life = 100
+                        anim.change(player, anim_state, 'idle', RIGHT)
+                        player_rect = pygame.Rect(50, 50, anim_state['sprite'].get_width()/anim_state['lim']/2, anim_state['sprite'].get_height())
+                        global_camera = [-180.0, -100.0]
+                        hud.update(game_hud, (life, 100, 100))
+
                     elif menu_ptr['ptr'] == 1:
                         game_state = OPTIONS_MENU
                         for i in range(len(video_modes)):
@@ -184,10 +201,15 @@ while game_running: # game loop
                     if options_ptr[0]['ptr'] == 3:
                         game_state = MAIN_MENU
                 ui.process_menu_commands([{'dec':keys[K_UP], 'inc':keys[K_DOWN]}, {'dec':keys[K_LEFT], 'inc':keys[K_RIGHT]}], options_ptr)
+
     elif game_state == GAME_RUNNING:
+        if (player_moves[0] or player_moves[1]) and sfx_acc*anim_state['speed'] > 1800 and air_timer < 10:
+            walk_sound.play()
+            sfx_acc = 0
+
         if not game_paused:
-            time_acc = anim.update(anim_state, time_acc)
-            time_acc2 = anim.update(cyborg_state, time_acc2)
+            time_acc = anim.update(anim_state, time_acc, life)
+            time_acc2 = anim.update(cyborg_state, time_acc2, cyborg_life)
 
             cyborg_movement, cyborg_y_momentum = move_char(cyborg_moves, cyborg_y_momentum, cyborg, cyborg_state, ms)
 
@@ -236,11 +258,25 @@ while game_running: # game loop
             else:
                 player_blocks[1] = False
 
+            if anim_state['sprite'] == player['run_attack']['sprite']:
+                if (anim_state['side'] == RIGHT and anim_state['lim']-1 == anim_state['prog']) or (anim_state['side'] == LEFT and 0 == anim_state['prog']):
+                    if player_moves[0] or player_moves[1]:
+                        anim.change(player, anim_state, 'run')
+                    else:
+                        anim.change(player, anim_state, 'idle')
+
             if cyborg_life > 0:
                 player_y_momentum, attack_cooldown, life, atk_lock = process_enemy_ai([cyborg, cyborg_rect, cyborg_state], player, player_rect, anim_state, player_y_momentum, life, cyborg_moves, cyborg_blocks, attack_cooldown, ms, game_hud, atk_lock)
                 atk_lock = False
-            else:
+            elif cyborg_state['sprite'] != cyborg['death']['sprite']:
                 anim.change(cyborg, cyborg_state, 'death')
+
+
+            if life < 0 and not anim_state['sprite'] == player['death']['sprite']:
+                anim.change(player, anim_state, 'death')
+            if anim_state['sprite'] == player['death']['sprite']:
+                if (anim_state['side'] == RIGHT and anim_state['lim']-1 == anim_state['prog']) or (anim_state['side'] == LEFT and 0 == anim_state['prog']):
+                    game_state = GAME_OVER
 
             smooth_camera(global_camera, player_rect, display, player_moves[1], player_moves[0], jumping)
 
@@ -266,11 +302,13 @@ while game_running: # game loop
                         global_camera = [player_rect.x-100, player_rect.y-100]
                     if keys[K_UP]:
                         if air_timer > 15 and not dashd:
+                            pygame.mixer.Sound.play(dash_sound)
                             dashd = True
                             jumping = True
                             anim.change(player, anim_state, 'doublejump')
                             player_y_momentum = -6.5
                         else:
+                            pygame.mixer.Sound.play(jump_sound)
                             jumping = True
                             anim.change(player, anim_state, 'jump')
                             if air_timer < 6:
@@ -286,6 +324,7 @@ while game_running: # game loop
                             fullscreen = True
                             display = pygame.Surface((250*(screen.get_width()/screen.get_height()), 250))
                     if keys[K_LCTRL]:
+                        pygame.mixer.Sound.play(punch_sound)
                         if test_rect_rect(player_rect, cyborg_rect) and cyborg_life > 0:
                             anim.change(cyborg, cyborg_state, 'hurt')
                             cyborg_life = lose_life(cyborg_life, 15)[0]
@@ -317,8 +356,7 @@ while game_running: # game loop
                         anim.change(player, anim_state, 'idle', LEFT)
                     if keys[K_RIGHT]:
                         anim.change(player, anim_state, 'run', RIGHT)
-                if event.key == K_LCTRL or event.key == K_x or event.key == K_z:
-                    anim.change(player, anim_state, 'idle')
+
 
         loopBackground(display, bg, dt_value(ms, 1.5), player_y_momentum, (player_moves[0], player_moves[1]))
         tile_rects = render_map(display, tilelist, TILE_SIZE, game_map, global_camera)
@@ -334,10 +372,26 @@ while game_running: # game loop
             player_moves[0], player_moves[1] = False, False
             display = blur(display, 3.5)
 
+    elif game_state == GAME_OVER:
+        display.fill((0,0,0))
+        print_text(font, display, "GAME OVER", display.get_width()/2, -15, (255,255,255), scale=4)
+        print_text(font, display, "Press ENTER to return to the main menu", display.get_width()/2, 150, (255,255,255))
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                game_running = False
+            if event.type == KEYDOWN:
+                keys = pygame.key.get_pressed()
+                if not game_paused:
+                    if keys[K_RETURN]:
+                        game_state = MAIN_MENU
+
+
     for i in range(125):
         display.blit(scan, (0, i*2))
     game.draw(display, screen)
     ms = clock.tick(fps_limit)
     time_acc += ms
     time_acc2 += ms
+    sfx_acc += ms
 game.deinit()

@@ -22,17 +22,21 @@ def change(char, state, anim, side=None):
     state['speed'] = char[anim]['speed']
     state['sprite'] = char[anim]['sprite']
 
-def update(state, time_acc):
+def update(state, time_acc, life):
     if time_acc*state['speed'] > 600:
         if state['side'] == RIGHT:
             if state['prog'] <= state['lim']:
                     state['prog'] += 1
             if state['prog'] >= state['lim']:
                 state['prog'] = 0
+                if life <= 0:
+                    state['prog'] = state['lim']-1
         else:
             if state['prog'] >= 0:
                     state['prog'] -= 1
             if state['prog'] <= 0:
                 state['prog'] = state['lim']-1
+                if life <= 0:
+                    state['prog'] = 0
         time_acc = 0
     return time_acc
