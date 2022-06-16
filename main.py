@@ -111,6 +111,19 @@ pygame.mixer.music.load("Sfx/galactic-trek.wav")
 pygame.mixer.music.set_volume(0.3)
 pygame.mixer.music.play(-1)
 
+def damage_enemy(player_rect, cyborg_rect, cyborg_state, cyborg_life, cyborg_y_momentum, cyborg_moves):
+    if test_rect_rect(player_rect, cyborg_rect) and cyborg_life > 0:
+        anim.change(cyborg, cyborg_state, 'hurt')
+        cyborg_life = lose_life(cyborg_life, 15)[0]
+        cyborg_moves[0] = False
+        cyborg_moves[1] = False
+        if cyborg_moves[0] == True:
+            cyborg_rect.x -= 30
+        elif cyborg_moves[1] == True:
+            cyborg_rect.x += 30
+        cyborg_y_momentum -= 2.5
+    return cyborg_life, cyborg_y_momentum
+
 while game_running: # game loop
     if game_state == MAIN_MENU:
         loopBackground(display, bg, dt_value(ms, 2.0), 0, (False, True))
@@ -325,16 +338,7 @@ while game_running: # game loop
                             display = pygame.Surface((250*(screen.get_width()/screen.get_height()), 250))
                     if keys[K_LCTRL]:
                         pygame.mixer.Sound.play(punch_sound)
-                        if test_rect_rect(player_rect, cyborg_rect) and cyborg_life > 0:
-                            anim.change(cyborg, cyborg_state, 'hurt')
-                            cyborg_life = lose_life(cyborg_life, 15)[0]
-                            cyborg_moves[0] = False
-                            cyborg_moves[1] = False
-                            if cyborg_moves[0] == True:
-                                cyborg_rect.x -= 30
-                            elif cyborg_moves[1] == True:
-                                cyborg_rect.x += 30
-                            cyborg_y_momentum -= 2.5
+                        cyborg_life, cyborg_y_momentum = damage_enemy(player_rect, cyborg_rect, cyborg_state, cyborg_life, cyborg_y_momentum, cyborg_moves)
                         anim.change(player, anim_state, 'run_attack')
                     if keys[K_z]:
                         anim.change(player, anim_state, 'attack2')
@@ -361,9 +365,11 @@ while game_running: # game loop
         loopBackground(display, bg, dt_value(ms, 1.5), player_y_momentum, (player_moves[0], player_moves[1]))
         tile_rects = render_map(display, tilelist, TILE_SIZE, game_map, global_camera)
         player_rect = draw_char(display, player_rect, global_camera, anim_state)
-        print_text(font, display, f"{cyborg_life}", World2Screen(cyborg_rect, global_camera)[0]+cyborg_rect.width/(4 if cyborg_state['side'] == LEFT else 1.35), World2Screen(cyborg_rect, global_camera)[1], (255,255,255), scale=0.8)
 
+        if cyborg_life > 0:
+            print_text(font, display, f"{cyborg_life}", World2Screen(cyborg_rect, global_camera)[0]+cyborg_rect.width/(4 if cyborg_state['side'] == LEFT else 1.35), World2Screen(cyborg_rect, global_camera)[1], (255,255,255), scale=0.8)
         cyborg_rect = draw_char(display, cyborg_rect, global_camera, cyborg_state)
+        
         hud.render(display, game_hud, 10, 10)
         print_text(font, display, f"Player coordinates: {player_rect.x},{player_rect.y}", display.get_width()/2, 5, (255,255,255))
 
