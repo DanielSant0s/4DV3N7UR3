@@ -46,33 +46,31 @@ def test_rect_rect(p_rect, c_rect):
         return True
     return False
 
-def proccess_char_collisions(collisions, char, char_state, char_y_momentum, air_timer, block_list, move_list):
-    if collisions['bottom']:
-        if char_state['sprite'] == char['jump']['sprite']:
-            if move_list[0] or move_list[1]:	
-                anim.change(char, char_state, 'run')
+def proccess_char_collisions(char):
+    if char['collisions']['bottom']:
+        if char['state']['sprite'] == char['anim']['jump']['sprite']:
+            if char['moves'][0] or char['moves'][1]:	
+                anim.change(char['anim'], char['state'], 'run')
             else:
-                anim.change(char, char_state, 'idle')
-        char_y_momentum = 0
-        air_timer = 0
+                anim.change(char['anim'], char['state'], 'idle')
+        char['y_momentum'] = 0
+        char['air_timer'] = 0
     else:
-        air_timer += 1
+        char['air_timer'] += 1
 
-    if collisions['left']:
-        block_list[0] = True
-        if char_y_momentum >= 0:
-            move_list[0] = False
+    if char['collisions']['left']:
+        char['blocks'][0] = True
+        if char['y_momentum'] >= 0:
+            char['moves'][0] = False
     else:
-        block_list[0] = False
+        char['blocks'][0] = False
 
-    if collisions['right']:
-        block_list[1] = True
-        if char_y_momentum >= 0:
-            move_list[1] = False
+    if char['collisions']['right']:
+        char['blocks'][1] = True
+        if char['y_momentum'] >= 0:
+            char['moves'][1] = False
     else:
-        block_list[1] = False
-
-    return char_y_momentum, air_timer
+        char['blocks'][1] = False
 
 def move_player(ml, mr, bl, br, y_momentum, camera, player, state, ms):
     player_movement = [0, 0]
@@ -95,19 +93,18 @@ def move_player(ml, mr, bl, br, y_momentum, camera, player, state, ms):
             anim.change(player, state, 'jump')
     return player_movement, y_momentum
 
-def move_char(move_list, y_momentum, char, state, ms):
-    char_movement = [0, 0]
-    if move_list[1]:
-        char_movement[0] += dt_value(ms, 2.0)
-    if move_list[0]:
-        char_movement[0] -= dt_value(ms, 2.0)
-    char_movement[1] += y_momentum
-    y_momentum += 0.2
-    if y_momentum > 3:
-        y_momentum = 3
-        if state['sprite'] != char['jump']['sprite']:
-            anim.change(char, state, 'jump')
-    return char_movement, y_momentum
+def move_char(char, ms):
+    char['movement'] = [0, 0]
+    if char['moves'][1]:
+        char['movement'][0] += dt_value(ms, 2.0)
+    if char['moves'][0]:
+        char['movement'][0] -= dt_value(ms, 2.0)
+    char['movement'][1] += char['y_momentum']
+    char['y_momentum'] += 0.2
+    if char['y_momentum'] > 3:
+        char['y_momentum'] = 3
+        if char['state']['sprite'] != char['anim']['jump']['sprite']:
+            anim.change(char['anim'], char['state'], 'jump')
 
 
 def process_enemy_ai(enemy, player, player_rect, player_state, player_y_momentum, life, ms, g_hud):

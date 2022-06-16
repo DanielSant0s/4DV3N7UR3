@@ -100,6 +100,8 @@ while game_running: # game loop
                         player_rect = pygame.Rect(50, 50, anim_state['sprite'].get_width()/anim_state['lim']/2, anim_state['sprite'].get_height())
                         global_camera = [-180.0, -100.0]
                         hud.update(game_hud, (life, 100, 100))
+                        for enemy in enemies:
+                            enemy['life'] = 100
 
                     elif menu_ptr['ptr'] == 1:
                         game_state = OPTIONS_MENU
@@ -175,9 +177,9 @@ while game_running: # game loop
 
             for enemy in enemies:
                 enemy['time_acc'] = anim.update(enemy['state'], enemy['time_acc'], enemy['life'])
-                enemy['movement'], enemy['y_momentum'] = move_char(enemy['moves'], enemy['y_momentum'], enemy['anim'], enemy['state'], ms)
+                move_char(enemy, ms)
                 enemy['rect'], enemy['collisions'] = move(enemy['rect'], enemy['movement'], tile_rects)
-                enemy['y_momentum'], enemy['air_timer'] = proccess_char_collisions(enemy['collisions'], enemy['anim'], enemy['state'], enemy['y_momentum'], enemy['air_timer'], enemy['blocks'], enemy['moves'])
+                proccess_char_collisions(enemy)
 
             time_acc = anim.update(anim_state, time_acc, life)
             player_movement, player_y_momentum = move_player(player_moves[0], player_moves[1], player_blocks[0], player_blocks[1], player_y_momentum, global_camera, player, anim_state, ms)
