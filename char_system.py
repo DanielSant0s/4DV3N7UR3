@@ -109,44 +109,74 @@ def move_char(move_list, y_momentum, char, state, ms):
             anim.change(char, state, 'jump')
     return char_movement, y_momentum
 
-def process_enemy_ai(enemy, player, player_rect, player_state, player_y_momentum, life, move_list, block_list, attack_cooldown, ms, g_hud, atk_lock):
-    attack_cooldown -= ms
 
-    if block_list[0] == True:
-        move_list[0] = False
-        move_list[1] = True
-        enemy[2]['side'] = RIGHT
-    elif block_list[1] == True:
-        move_list[0] = True
-        move_list[1] = False
-        enemy[2]['side'] = LEFT
+def process_enemy_ai(enemy, player, player_rect, player_state, player_y_momentum, life, ms, g_hud):
+    enemy['cooldown'] -= ms
 
-    if test_rect_rect(player_rect, enemy[1]):
-        if attack_cooldown <= 0 and not atk_lock:
-            anim.change(enemy[0], enemy[2], 'run_attack')
+    if enemy['blocks'][0] == True:
+        enemy['moves'][0] = False
+        enemy['moves'][1] = True
+        enemy['state']['side'] = RIGHT
+    elif enemy['blocks'][1] == True:
+        enemy['moves'][0] = True
+        enemy['moves'][1] = False
+        enemy['state']['side'] = LEFT
+
+    if test_rect_rect(player_rect, enemy['rect']):
+        if enemy['cooldown'] <= 0 and not enemy['atk_lock'] and life > 0:
+            anim.change(enemy['anim'], enemy['state'], 'run_attack')
             anim.change(player, player_state, 'hurt')
             hud.update(g_hud, (int(life), 100, 100))
             life = lose_life(life, 15)[0]
-            if move_list[0] == True:
+            if enemy['moves'][0] == True:
                 player_rect.x -= 30
-            elif move_list[1] == True:
+            elif enemy['moves'][1] == True:
                 player_rect.x += 30
             player_y_momentum -= 2.5
-            attack_cooldown = 2000
-            atk_lock = True
+            enemy['cooldown'] = 2000
+            enemy['atk_lock'] = True
 
-    elif enemy[1].y == player_rect.y and attack_cooldown <= 0:
-        if enemy[1].x < player_rect.x:
-            move_list[1] = True
-            move_list[0] = False
-            enemy[2]['side'] = RIGHT
-        elif enemy[1].x > player_rect.x:
-            move_list[1] = False
-            move_list[0] = True
-            enemy[2]['side'] = LEFT
+    elif enemy['rect'].y == player_rect.y and enemy['cooldown'] <= 0:
+        if enemy['rect'].x < player_rect.x:
+            enemy['moves'][1] = True
+            enemy['moves'][0] = False
+            enemy['state']['side'] = RIGHT
+        elif enemy['rect'].x > player_rect.x:
+            enemy['moves'][1] = False
+            enemy['moves'][0] = True
+            enemy['state']['side'] = LEFT
 
-    if enemy[0]['run_attack']['sprite'] == enemy[2]['sprite'] or enemy[0]['hurt']['sprite'] == enemy[2]['sprite']:
-        if (enemy[2]['prog'] == enemy[2]['lim']-1 and enemy[2]['side'] == RIGHT) or (enemy[2]['prog'] == 1 and enemy[2]['side'] == LEFT):
-            anim.change(enemy[0], enemy[2], 'run')
+    if enemy['anim']['run_attack']['sprite'] == enemy['state']['sprite'] or enemy['anim']['hurt']['sprite'] == enemy['state']['sprite']:
+        if (enemy['state']['prog'] == enemy['state']['lim']-1 and enemy['state']['side'] == RIGHT) or (enemy['state']['prog'] == 1 and enemy['state']['side'] == LEFT):
+            anim.change(enemy['anim'], enemy['state'], 'run')
 
-    return player_y_momentum, attack_cooldown, life, atk_lock
+    return player_y_momentum, life
+
+def register_enemy(enemies, char_name, posx, posy, speed_list, frames_list):
+    enemy = {}
+    enemy['anim'] = anim.new(char_name, speed_list, frames_list)
+    enemy['state'] = {'sprite': enemy['anim']['idle']['sprite'], 'prog': 0, 'lim': enemy['anim']['idle']['frames'], 'speed': enemy['anim']['idle']['speed'], 'side': RIGHT}
+    enemy['rect'] = pygame.Rect(posx, posy, enemy['state']['sprite'].get_width()/enemy['state']['lim']/2, enemy['state']['sprite'].get_height())
+    enemy['moves'] = [False, True]
+    enemy['blocks'] = [False, False]
+    enemy['collisions'] = None
+    enemy['movement'] = None
+    enemy['y_momentum'] = 0
+    enemy['air_timer'] = 0
+    enemy['time_acc'] = 0
+    enemy['cooldown'] = 0
+    enemy['atk_lock'] = False
+    enemy['life'] = 100
+    enemies.append(enemy)
+
+def damage_enemy(player_rect, enemy, damage):
+    if test_rect_rect(player_rect, enemy['rect']) and enemy['life'] > 0:
+        anim.change(enemy['anim'], enemy['state'], 'hurt')
+        enemy['life'] = lose_life(enemy['life'], damage)[0]
+        enemy['moves'][0] = False
+        enemy['moves'][1] = False
+        if enemy['moves'][0] == True:
+            enemy['rect'].x -= 30
+        elif enemy['moves'][1] == True:
+            enemy['rect'].x += 30
+        enemy['y_momentum'] -= 2.5

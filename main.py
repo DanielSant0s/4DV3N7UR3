@@ -21,75 +21,39 @@ tilelist = load_texture_dictionary('Map/Tiles/')
 TILE_SIZE = 32
 
 frames_lst = [6, 8, 8, 6, 6, 6, 2, 4, 4, 6, 6, 6]
-speeds_lst = [8.0, 8.0, 8.0, 1.0, 4.0, 4.0, 4.0, 1.0, 1.0, 1.0, 4.0, 4.0]
+speeds_lst = [8.0, 8.0, 8.0, 1.0, 4.0, 4.0, 4.0, 1.0, 1.0, 1.0, 4.0, 8.0]
 
 player = anim.new('Punk', speeds_lst, frames_lst)
-biker = anim.new('Biker', speeds_lst, frames_lst)
-cyborg = anim.new('Cyborg', speeds_lst, frames_lst)
-
-font = pygame.font.Font('Font/PixeloidMono-1G8ae.ttf', 9)
-
-game_map = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 77, 77,77, 77, 77],
-            [0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 18,18,0, 0, 0, 0, 0, 0, 18,18,5, 0,  0,  0,  0,  0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0,  0,  0,  0,  0],
-            [5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0,  0,  0,  0,  0],
-            [2, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2, 2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0,  0,  0,  0,  0],
-            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0,  0,  0,  0,  0],
-            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0,  0,  0,  0,  0],
-            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0,  0,  0,  0,  0],
-            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0,  0,  0,  0,  0],
-            [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0,  0,  0,  0,  0]]
-
-cyborg_moves = [False, True]
-cyborg_blocks = [False, False]
+anim_state = {'sprite': player['idle']['sprite'], 'prog': 0, 'lim': player['idle']['frames'], 'speed': player['idle']['speed'], 'side': RIGHT}
+player_rect = pygame.Rect(50, 50, anim_state['sprite'].get_width()/anim_state['lim']/2, anim_state['sprite'].get_height())
 player_moves = [False, False]
 player_blocks = [False, False]
-
 player_y_momentum = 0
-cyborg_y_momentum = 0
 air_timer = 0
-cyborg_air_timer = 0
-
-ms = 0
 time_acc = 0
-time_acc2 = 0
-sfx_acc = 0
-attack_cooldown = 0
-atk_lock = False
-
-game_paused = False
-
-anim_state = {'sprite': player['idle']['sprite'], 'prog': 0, 'lim': player['idle']['frames'], 'speed': player['idle']['speed'], 'side': RIGHT}
-cyborg_state = {'sprite': cyborg['idle']['sprite'], 'prog': 0, 'lim': cyborg['idle']['frames'], 'speed': cyborg['idle']['speed'], 'side': RIGHT}
-
-player_rect = pygame.Rect(50, 50, anim_state['sprite'].get_width()/anim_state['lim']/2, anim_state['sprite'].get_height())
-cyborg_rect = pygame.Rect(850, 180, cyborg_state['sprite'].get_width()/cyborg_state['lim']/2, cyborg_state['sprite'].get_height())
-test_rect = pygame.Rect(100,100,100,50)
-
 dashd = False
 jumping = False
-
 life = 100
 life_lost = 0
 
-cyborg_life = 100
+font = pygame.font.Font('Font/PixeloidMono-1G8ae.ttf', 9)
+
+enemies = []
+register_enemy(enemies, 'Cyborg', 800, 180, speeds_lst, frames_lst)
+register_enemy(enemies, 'Biker', 900, 180, speeds_lst, frames_lst)
+
+ms = 0
+sfx_acc = 0
+game_paused = False
 
 mouse_pos = pygame.mouse.get_pos()
 
 fullscreen = True
-
 game_hud = hud.init()
-
 hud.update(game_hud, (life, 100, 100))
-
 game_state = MAIN_MENU
 
 dark_overlay = new_rectEX(display.get_width(), display.get_height(), (0,0,0,128))
-
-video_modes = [(640,480), (800,600), (1024,768), (1280,720), (1366, 768), (1280,1024), (1600,900), (1920,1080)]
 
 menu_ptr = {'ptr': 0, 'lim': 4, 'store':None}
 options_ptr = [{'ptr': 0, 'lim': 4, 'store':[0,1,0,0]}, {'ptr': 0, 'lim': 7, 'store':None}]
@@ -110,19 +74,6 @@ walk_sound = pygame.mixer.Sound("Sfx/Footstep/Footstep__007.wav")
 pygame.mixer.music.load("Sfx/galactic-trek.wav")
 pygame.mixer.music.set_volume(0.3)
 pygame.mixer.music.play(-1)
-
-def damage_enemy(player_rect, cyborg_rect, cyborg_state, cyborg_life, cyborg_y_momentum, cyborg_moves):
-    if test_rect_rect(player_rect, cyborg_rect) and cyborg_life > 0:
-        anim.change(cyborg, cyborg_state, 'hurt')
-        cyborg_life = lose_life(cyborg_life, 15)[0]
-        cyborg_moves[0] = False
-        cyborg_moves[1] = False
-        if cyborg_moves[0] == True:
-            cyborg_rect.x -= 30
-        elif cyborg_moves[1] == True:
-            cyborg_rect.x += 30
-        cyborg_y_momentum -= 2.5
-    return cyborg_life, cyborg_y_momentum
 
 while game_running: # game loop
     if game_state == MAIN_MENU:
@@ -221,20 +172,19 @@ while game_running: # game loop
             sfx_acc = 0
 
         if not game_paused:
+
+            for enemy in enemies:
+                enemy['time_acc'] = anim.update(enemy['state'], enemy['time_acc'], enemy['life'])
+                enemy['movement'], enemy['y_momentum'] = move_char(enemy['moves'], enemy['y_momentum'], enemy['anim'], enemy['state'], ms)
+                enemy['rect'], enemy['collisions'] = move(enemy['rect'], enemy['movement'], tile_rects)
+                enemy['y_momentum'], enemy['air_timer'] = proccess_char_collisions(enemy['collisions'], enemy['anim'], enemy['state'], enemy['y_momentum'], enemy['air_timer'], enemy['blocks'], enemy['moves'])
+
             time_acc = anim.update(anim_state, time_acc, life)
-            time_acc2 = anim.update(cyborg_state, time_acc2, cyborg_life)
-
-            cyborg_movement, cyborg_y_momentum = move_char(cyborg_moves, cyborg_y_momentum, cyborg, cyborg_state, ms)
-
             player_movement, player_y_momentum = move_player(player_moves[0], player_moves[1], player_blocks[0], player_blocks[1], player_y_momentum, global_camera, player, anim_state, ms)
+            player_rect, collisions = move(player_rect, player_movement, tile_rects)
 
             #mouse_pos = pygame.mouse.get_pos()
             #pygame.draw.rect(display, (255, 0, 0), (mouse_pos[0]/(screen.get_width()/display.get_width()), mouse_pos[1]/(screen.get_height()/display.get_height()), 5, 5))
-
-            player_rect, collisions = move(player_rect, player_movement, tile_rects)
-
-            cyborg_rect, e_collisions = move(cyborg_rect, cyborg_movement, tile_rects)
-            cyborg_y_momentum, cyborg_air_timer = proccess_char_collisions(e_collisions, cyborg, cyborg_state, cyborg_y_momentum, cyborg_air_timer, cyborg_blocks, cyborg_moves)
 
             if collisions['bottom']:
                 jump_mode = 0
@@ -278,11 +228,12 @@ while game_running: # game loop
                     else:
                         anim.change(player, anim_state, 'idle')
 
-            if cyborg_life > 0:
-                player_y_momentum, attack_cooldown, life, atk_lock = process_enemy_ai([cyborg, cyborg_rect, cyborg_state], player, player_rect, anim_state, player_y_momentum, life, cyborg_moves, cyborg_blocks, attack_cooldown, ms, game_hud, atk_lock)
-                atk_lock = False
-            elif cyborg_state['sprite'] != cyborg['death']['sprite']:
-                anim.change(cyborg, cyborg_state, 'death')
+            for enemy in enemies:
+                if enemy['life'] > 0:
+                    player_y_momentum, life = process_enemy_ai(enemy, player, player_rect, anim_state, player_y_momentum, life, ms, game_hud)
+                    enemy['atk_lock'] = False
+                elif enemy['state']['sprite'] != enemy['anim']['death']['sprite']:
+                    anim.change(enemy['anim'], enemy['state'], 'death')
 
 
             if life < 0 and not anim_state['sprite'] == player['death']['sprite']:
@@ -298,7 +249,7 @@ while game_running: # game loop
                 game_running = False
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
-                if not game_paused:
+                if not game_paused and life > 0:
                     if keys[K_RIGHT]:
                         player_moves[1] = True
                         anim.change(player, anim_state, 'run', RIGHT)
@@ -338,7 +289,8 @@ while game_running: # game loop
                             display = pygame.Surface((250*(screen.get_width()/screen.get_height()), 250))
                     if keys[K_LCTRL]:
                         pygame.mixer.Sound.play(punch_sound)
-                        cyborg_life, cyborg_y_momentum = damage_enemy(player_rect, cyborg_rect, cyborg_state, cyborg_life, cyborg_y_momentum, cyborg_moves)
+                        for enemy in enemies:
+                            damage_enemy(player_rect, enemy, 15)
                         anim.change(player, anim_state, 'run_attack')
                     if keys[K_z]:
                         anim.change(player, anim_state, 'attack2')
@@ -366,10 +318,11 @@ while game_running: # game loop
         tile_rects = render_map(display, tilelist, TILE_SIZE, game_map, global_camera)
         player_rect = draw_char(display, player_rect, global_camera, anim_state)
 
-        if cyborg_life > 0:
-            print_text(font, display, f"{cyborg_life}", World2Screen(cyborg_rect, global_camera)[0]+cyborg_rect.width/(4 if cyborg_state['side'] == LEFT else 1.35), World2Screen(cyborg_rect, global_camera)[1], (255,255,255), scale=0.8)
-        cyborg_rect = draw_char(display, cyborg_rect, global_camera, cyborg_state)
-        
+        for enemy in enemies:
+            if enemy['life'] > 0:
+                print_text(font, display, f"{enemy['life']}", World2Screen(enemy['rect'], global_camera)[0]+enemy['rect'].width/(4 if enemy['state']['side'] == LEFT else 1.35), World2Screen(enemy['rect'], global_camera)[1], (255,255,255), scale=0.8)
+            enemy['rect'] = draw_char(display, enemy['rect'], global_camera, enemy['state'])
+
         hud.render(display, game_hud, 10, 10)
         print_text(font, display, f"Player coordinates: {player_rect.x},{player_rect.y}", display.get_width()/2, 5, (255,255,255))
 
@@ -392,12 +345,17 @@ while game_running: # game loop
                     if keys[K_RETURN]:
                         game_state = MAIN_MENU
 
-
     for i in range(125):
         display.blit(scan, (0, i*2))
+
     game.draw(display, screen)
+
     ms = clock.tick(fps_limit)
+
     time_acc += ms
-    time_acc2 += ms
+
+    for enemy in enemies:
+        enemy['time_acc'] += ms
+
     sfx_acc += ms
 game.deinit()
