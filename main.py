@@ -31,13 +31,9 @@ player_blocks = [False, False]
 player_y_momentum = 0
 air_timer = 0
 player_timers = [0, 0, 0, 0, 0]
-#timer_acc - 0
-#atk1_timer - 1
-#atk2_timer - 2
-#atk3_timer - 3
-#dash_timer - 4
 dashd = False
 jumping = False
+old_life = 0
 life = 100
 life_lost = 0
 
@@ -245,6 +241,8 @@ while game_running:
 
             if life < 0 and not anim_state['sprite'] == player['death']['sprite']:
                 anim.change(player, anim_state, 'death')
+                player_moves[0] = False
+                player_moves[1] = False
             if anim_state['sprite'] == player['death']['sprite']:
                 if (anim_state['side'] == RIGHT and anim_state['lim']-1 == anim_state['prog']) or (anim_state['side'] == LEFT and 0 == anim_state['prog']):
                     game_state = GAME_OVER
@@ -358,7 +356,10 @@ while game_running:
             player_timers[4] += ms
 
         if player_timers[3] < 16384:
-            player_timers[3] += ms
+            if life-old_life == 0:
+                player_timers[3] += ms*0.3
+            else:
+                player_timers[3] = 0
 
         hud.update(game_hud, (life, player_timers[4]/163.84, player_timers[3]/163.84))
 
@@ -366,6 +367,8 @@ while game_running:
             enemy['time_acc'] += ms
 
         sfx_acc += ms
+
+        old_life = life
 
     elif game_state == GAME_OVER:
         display.fill((0,0,0))

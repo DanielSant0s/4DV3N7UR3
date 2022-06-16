@@ -111,10 +111,14 @@ def process_enemy_ai(enemy, player, player_rect, player_state, player_y_momentum
     enemy['cooldown'] -= ms
 
     if enemy['blocks'][0] == True:
+        if enemy['state']['sprite'] == enemy['anim']['idle']['sprite']:
+            anim.change(enemy['anim'], enemy['state'], 'run')
         enemy['moves'][0] = False
         enemy['moves'][1] = True
         enemy['state']['side'] = RIGHT
     elif enemy['blocks'][1] == True:
+        if enemy['state']['sprite'] == enemy['anim']['idle']['sprite']:
+            anim.change(enemy['anim'], enemy['state'], 'run')
         enemy['moves'][0] = True
         enemy['moves'][1] = False
         enemy['state']['side'] = LEFT
@@ -170,10 +174,10 @@ def damage_enemy(player_rect, enemy, damage):
     if test_rect_rect(player_rect, enemy['rect']) and enemy['life'] > 0:
         anim.change(enemy['anim'], enemy['state'], 'hurt')
         enemy['life'] = lose_life(enemy['life'], damage)[0]
-        enemy['moves'][0] = False
-        enemy['moves'][1] = False
         if enemy['moves'][0] == True:
             enemy['rect'].x -= 30
         elif enemy['moves'][1] == True:
             enemy['rect'].x += 30
+        enemy['moves'][0] = False
+        enemy['moves'][1] = False
         enemy['y_momentum'] -= 2.5
