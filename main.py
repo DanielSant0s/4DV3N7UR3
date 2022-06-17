@@ -95,13 +95,15 @@ game_running = True
 
 attack = False
 
-volume = 0.3
-
 dash_sound = pygame.mixer.Sound("Sfx/Jump/Jump__004.wav")
 jump_sound = pygame.mixer.Sound("Sfx/Jump/Jump__002.wav")
 punch_sound = pygame.mixer.Sound("Sfx/Punch2/Punch2__001.wav")
+special_sound = pygame.mixer.Sound("Sfx/Punch2/Punch2__002.wav")
+punch2_sound = pygame.mixer.Sound("Sfx/Punch2/Punch2__003.wav")
 walk_sound = pygame.mixer.Sound("Sfx/Footstep/Footstep__007.wav")
+walk2_sound = pygame.mixer.Sound("Sfx/Footstep/Footstep__009.wav")
 
+volume = 0.3
 pygame.mixer.music.load("Sfx/galactic-trek.wav")
 pygame.mixer.music.set_volume(volume)
 pygame.mixer.music.play(-1)
@@ -243,17 +245,21 @@ while game_running:
                 ui.process_menu_commands([{'dec':keys[K_UP], 'inc':keys[K_DOWN]}, {'dec':keys[K_LEFT], 'inc':keys[K_RIGHT]}], options_ptr)
 
     elif game_state == GAME_RUNNING:
-        if (player_moves[0] or player_moves[1]) and sfx_acc*anim_state['speed'] > 1800 and air_timer < 10:
-            walk_sound.play()
-            sfx_acc = 0
-
         if not game_paused:
+
+            if (player_moves[0] or player_moves[1]) and sfx_acc*anim_state['speed'] > 1800 and air_timer < 10:
+                walk_sound.play()
+                sfx_acc = 0
 
             for enemy in enemies:
                 enemy['time_acc'] = anim.update(enemy['state'], enemy['time_acc'], enemy['life'])
                 move_char(enemy, ms)
                 enemy['rect'], enemy['collisions'] = move(enemy['rect'], enemy['movement'], tile_rects)
                 proccess_char_collisions(enemy)
+                if player_rect.x-150 < enemy['rect'].x < player_rect.x+150:
+                    if (enemy['moves'][0] or enemy['moves'][1]) and (enemy['sfx_acc']*enemy['state']['speed'] > 1800 and enemy['air_timer'] < 10):
+                        walk2_sound.play()
+                        enemy['sfx_acc'] = 0
 
             player_timers[0] = anim.update(anim_state, player_timers[0], life)
             player_movement, player_y_momentum = move_player(player_moves[0], player_moves[1], player_blocks[0], player_blocks[1], player_y_momentum, global_camera, player, anim_state, ms)
@@ -301,9 +307,11 @@ while game_running:
                     else:
                         anim.change(player, anim_state, 'idle')
 
-            for enemy in enemies:
+            for enemy in enemies:   
                 if enemy['life'] > 0:
                     player_y_momentum, life = process_enemy_ai(enemy, player, player_rect, anim_state, player_y_momentum, life, ms, game_hud)
+                    if enemy['atk_lock']:
+                        pygame.mixer.Sound.play(punch2_sound)
                     enemy['atk_lock'] = False
                 elif enemy['state']['sprite'] != enemy['anim']['death']['sprite']:
                     anim.change(enemy['anim'], enemy['state'], 'death')
@@ -326,7 +334,7 @@ while game_running:
 
             if player_timers[3] < 16384:
                 if life-old_life == 0:
-                    player_timers[3] += ms*0.3
+                    player_timers[3] += ms*0.6
                 else:
                     player_timers[3] = 0
 
@@ -337,6 +345,7 @@ while game_running:
 
             for enemy in enemies:
                 enemy['time_acc'] += ms
+                enemy['sfx_acc'] += ms
 
             sfx_acc += ms
 
@@ -397,14 +406,16 @@ while game_running:
                             anim.change(player, anim_state, 'attack1')
 
                     if keys[K_z]:
+                        for enemy in enemies:
+                            damage_enemy(player_rect, enemy, 25)
                         pygame.mixer.Sound.play(punch_sound)
                         anim.change(player, anim_state, 'attack2')
 
                     if keys[K_x]:
                         if not player_moves[0] and not player_moves[1] and player_timers[3] >= 16384:
                             for enemy in enemies:
-                                damage_enemy(player_rect, enemy, 50)
-                            pygame.mixer.Sound.play(punch_sound)
+                                damage_enemy(player_rect, enemy, 50, 100, 4)
+                            pygame.mixer.Sound.play(special_sound)
                             anim.change(player, anim_state, 'attack3')
                             player_timers[3] = 0
                 else:

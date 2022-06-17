@@ -165,19 +165,20 @@ def register_enemy(enemies, char_name, posx, posy, speed_list, frames_list):
     enemy['y_momentum'] = 0
     enemy['air_timer'] = 0
     enemy['time_acc'] = 0
+    enemy['sfx_acc'] = 0
     enemy['cooldown'] = 0
     enemy['atk_lock'] = False
     enemy['life'] = 100
     enemies.append(enemy)
 
-def damage_enemy(player_rect, enemy, damage):
+def damage_enemy(player_rect, enemy, damage, x=30, y=2.5):
     if test_rect_rect(player_rect, enemy['rect']) and enemy['life'] > 0:
         anim.change(enemy['anim'], enemy['state'], 'hurt')
         enemy['life'] = lose_life(enemy['life'], damage)[0]
         if enemy['moves'][0] == True:
-            enemy['rect'].x -= 30
+            enemy['rect'].x -= x
         elif enemy['moves'][1] == True:
-            enemy['rect'].x += 30
+            enemy['rect'].x += x
         enemy['moves'][0] = False
         enemy['moves'][1] = False
-        enemy['y_momentum'] -= 2.5
+        enemy['y_momentum'] -= y
