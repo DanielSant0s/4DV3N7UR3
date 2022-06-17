@@ -39,6 +39,7 @@ old_life = 0
 life = 100
 life_lost = 0
 pills = 5
+score = 0
 
 font = pygame.font.Font('Font/PixeloidMono-1G8ae.ttf', 9)
 
@@ -53,20 +54,14 @@ register_enemy(enemies, 'Cyborg', 2500, 330, speeds_lst, frames_lst)
 register_enemy(enemies, 'Biker', 2400, 330, speeds_lst, frames_lst)
 register_enemy(enemies, 'Cyborg', 2600, 330, speeds_lst, frames_lst)
 register_enemy(enemies, 'Biker', 2700, 330, speeds_lst, frames_lst)
-register_enemy(enemies, 'Cyborg', 2300, 330, speeds_lst, frames_lst)
 
-register_enemy(enemies, 'Cyborg', 2500, 140, speeds_lst, frames_lst)
 register_enemy(enemies, 'Biker', 2400, 140, speeds_lst, frames_lst)
 register_enemy(enemies, 'Cyborg', 2600, 140, speeds_lst, frames_lst)
 register_enemy(enemies, 'Biker', 2700, 140, speeds_lst, frames_lst)
-register_enemy(enemies, 'Biker', 2300, 140, speeds_lst, frames_lst)
 
-register_enemy(enemies, 'Biker', 3000, 330, speeds_lst, frames_lst)
-register_enemy(enemies, 'Biker', 3050, 330, speeds_lst, frames_lst)
 register_enemy(enemies, 'Biker', 3100, 330, speeds_lst, frames_lst)
 register_enemy(enemies, 'Biker', 3150, 330, speeds_lst, frames_lst)
 register_enemy(enemies, 'Biker', 3200, 330, speeds_lst, frames_lst)
-register_enemy(enemies, 'Biker', 3250, 330, speeds_lst, frames_lst)
 
 
 ms = 0
@@ -164,7 +159,7 @@ while game_running:
                         pygame.mixer.music.set_volume(volume)
                         game_state = GAME_RUNNING
                         life = 100
-                        pills = 3
+                        pills = 5
                         anim.change(player, anim_state, 'idle', RIGHT)
                         player_rect = pygame.Rect(50, 270, anim_state['sprite'].get_width()/anim_state['lim']/2, anim_state['sprite'].get_height())
                         global_camera = [-180.0, -100.0]
@@ -175,6 +170,7 @@ while game_running:
                             enemy['time_acc'] = 0
                             anim.change(enemy['anim'], enemy['state'], 'idle', RIGHT)
                         game_paused = False
+                        score = 0
 
                     elif menu_ptr['ptr'] == 1:
                         game_state = OPTIONS_MENU
@@ -319,6 +315,7 @@ while game_running:
                     enemy['atk_lock'] = False
                 elif enemy['state']['sprite'] != enemy['anim']['death']['sprite']:
                     anim.change(enemy['anim'], enemy['state'], 'death')
+                    score += 10
 
 
             if life < 0 and not anim_state['sprite'] == player['death']['sprite']:
@@ -343,6 +340,9 @@ while game_running:
                     player_timers[3] = 0
 
             if player_rect.x >= 3520 and player_rect.y >= 270:
+                game_state = GAME_OVER
+            if player_rect.y > 600:
+                life = 0
                 game_state = GAME_OVER
 
             hud.update(game_hud, (life, player_timers[4]/163.84, player_timers[3]/163.84))
@@ -509,6 +509,8 @@ while game_running:
         player_rect = draw_char(display, player_rect, global_camera, anim_state)
 
         print_text(font, display,  ("MATCH COMPLETED!" if life > 0 else "GAME OVER"), display.get_width()/2, -15, (255,255,255), scale=4)
+        if life > 0:
+            print_text(font, display, f"Score: {score}/140", display.get_width()/2, 100, (255,255,255))
         print_text(font, display, "Press ENTER to return to the main menu", display.get_width()/2, 150, (255,255,255))
 
         for event in pygame.event.get():
