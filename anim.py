@@ -4,13 +4,13 @@ from random import randint
 def new(char_name, speed_list, frames_list, random=False):
     anim_dict = {}
     if random:
-        rand_color = (randint(60,255),randint(60,255),randint(60,255))
+        rand_color = (randint(0,128),randint(0,128),randint(0,128))
     flist = sorted(os.listdir("Char/"+char_name+"/"))
     for i in range(len(flist)):
         name = get_between(flist[i], char_name+"_", ".png")
         anim_sprite = pygame.image.load("Char/"+char_name+"/" + flist[i]).convert_alpha()
         if random:
-            anim_sprite.fill(rand_color, special_flags=pygame.BLEND_MULT)
+            anim_sprite.fill(rand_color, special_flags=pygame.BLEND_ADD)
         anim_dict[name] = {'sprite': anim_sprite, 'speed': speed_list[i], 'frames': frames_list[i]}
     return anim_dict
 

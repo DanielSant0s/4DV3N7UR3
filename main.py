@@ -38,6 +38,7 @@ jumping = False
 old_life = 0
 life = 100
 life_lost = 0
+pills = 3
 
 font = pygame.font.Font('Font/PixeloidMono-1G8ae.ttf', 9)
 
@@ -47,6 +48,26 @@ register_enemy(enemies, 'Biker', 900, 180, speeds_lst, frames_lst)
 
 register_enemy(enemies, 'Biker', 1600, 200, speeds_lst, frames_lst)
 register_enemy(enemies, 'Cyborg', 1250, 200, speeds_lst, frames_lst)
+
+register_enemy(enemies, 'Cyborg', 2500, 330, speeds_lst, frames_lst)
+register_enemy(enemies, 'Biker', 2400, 330, speeds_lst, frames_lst)
+register_enemy(enemies, 'Cyborg', 2600, 330, speeds_lst, frames_lst)
+register_enemy(enemies, 'Biker', 2700, 330, speeds_lst, frames_lst)
+register_enemy(enemies, 'Cyborg', 2300, 330, speeds_lst, frames_lst)
+
+register_enemy(enemies, 'Cyborg', 2500, 140, speeds_lst, frames_lst)
+register_enemy(enemies, 'Biker', 2400, 140, speeds_lst, frames_lst)
+register_enemy(enemies, 'Cyborg', 2600, 140, speeds_lst, frames_lst)
+register_enemy(enemies, 'Biker', 2700, 140, speeds_lst, frames_lst)
+register_enemy(enemies, 'Biker', 2300, 140, speeds_lst, frames_lst)
+
+register_enemy(enemies, 'Biker', 3000, 330, speeds_lst, frames_lst)
+register_enemy(enemies, 'Biker', 3050, 330, speeds_lst, frames_lst)
+register_enemy(enemies, 'Biker', 3100, 330, speeds_lst, frames_lst)
+register_enemy(enemies, 'Biker', 3150, 330, speeds_lst, frames_lst)
+register_enemy(enemies, 'Biker', 3200, 330, speeds_lst, frames_lst)
+register_enemy(enemies, 'Biker', 3250, 330, speeds_lst, frames_lst)
+
 
 ms = 0
 sfx_acc = 0
@@ -60,8 +81,10 @@ hud.update(game_hud, (life, 100, 100))
 game_state = MAIN_MENU
 
 dark_overlay = new_rectEX(display.get_width(), display.get_height(), (0,0,0,128))
+gold_overlay = new_rectEX(display.get_width(), display.get_height(), (255,215,0,128))
 
 menu_ptr = {'ptr': 0, 'lim': 4, 'store':None}
+pause_ptr = {'ptr': 0, 'lim': 5, 'store':None}
 options_ptr = [{'ptr': 0, 'lim': 4, 'store':[0,1,0,0]}, {'ptr': 0, 'lim': 7, 'store':None}]
 
 new_mode = (screen.get_width(),screen.get_height())
@@ -72,16 +95,48 @@ game_running = True
 
 attack = False
 
+volume = 0.3
+
 dash_sound = pygame.mixer.Sound("Sfx/Jump/Jump__004.wav")
 jump_sound = pygame.mixer.Sound("Sfx/Jump/Jump__002.wav")
 punch_sound = pygame.mixer.Sound("Sfx/Punch2/Punch2__001.wav")
 walk_sound = pygame.mixer.Sound("Sfx/Footstep/Footstep__007.wav")
 
 pygame.mixer.music.load("Sfx/galactic-trek.wav")
-pygame.mixer.music.set_volume(0.3)
+pygame.mixer.music.set_volume(volume)
 pygame.mixer.music.play(-1)
 
+commands_text = '''Gameplay:
+Left-Right arrow keys to move your character.
+Up arrow key to jump, Double-tap to dash if dash bar is full.
+Ctrl key to normal attack, Z Key to double attack.
+X Key to special attack (only grows if you don't take damage).
+
+Menus:
+Arrow keys to navegate through menus and options.
+Enter key to select or apply an option.
+Esc key to exit a menu.'''
+
 while game_running:
+    if game_state == COMMANDS_MENU:
+        loopBackground(display, bg, dt_value(ms, 2.0), 0, (False, True))
+        display = blur(display, 2.8)
+
+        display.blit(dark_overlay, (0,0))
+        print_text(font, display, "Commands", display.get_width()/2, -25, (255,255,255), scale=4)
+
+        print_text(font, display, commands_text, 40, 70, (255,255,255), center=False)
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                game_running = False
+            if event.type == KEYDOWN:
+                keys = pygame.key.get_pressed()
+                if keys[K_ESCAPE]:
+                    game_state = MAIN_MENU
+                    if game_paused:
+                        game_state = GAME_RUNNING
+
     if game_state == MAIN_MENU:
         loopBackground(display, bg, dt_value(ms, 2.0), 0, (False, True))
         display = blur(display, 2.8)
@@ -89,7 +144,7 @@ while game_running:
         display.blit(dark_overlay, (0,0))
         print_text(font, display, "4DV3N7UR3", display.get_width()/2, -25, (255,255,255), scale=4)
 
-        main_labels = ["Start Game", "Options", "Creator", "Exit"]
+        main_labels = ["Start Game", "Options", "Commands", "Exit"]
         ui.draw_menu(display, font, main_labels, menu_ptr['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
         
         for event in pygame.event.get():
@@ -102,14 +157,17 @@ while game_running:
                         pygame.mixer.music.set_volume(0.1)
                         game_state = GAME_RUNNING
                         life = 100
+                        pills = 3
                         anim.change(player, anim_state, 'idle', RIGHT)
-                        player_rect = pygame.Rect(50, 50, anim_state['sprite'].get_width()/anim_state['lim']/2, anim_state['sprite'].get_height())
+                        player_rect = pygame.Rect(50, 270, anim_state['sprite'].get_width()/anim_state['lim']/2, anim_state['sprite'].get_height())
                         global_camera = [-180.0, -100.0]
                         hud.update(game_hud, (life, 0, 0))
                         player_timers = [0, 0, 0, 0, 0]
                         for enemy in enemies:
                             enemy['life'] = 100
                             enemy['time_acc'] = 0
+                            anim.change(enemy['anim'], enemy['state'], 'idle', RIGHT)
+                        game_paused = False
 
                     elif menu_ptr['ptr'] == 1:
                         game_state = OPTIONS_MENU
@@ -123,6 +181,8 @@ while game_running:
                                 options_ptr[1]['ptr'] = 8
                                 break
                         options_ptr[0]['store'][0] = options_ptr[1]['ptr']
+                    elif menu_ptr['ptr'] == 2:
+                        game_state = COMMANDS_MENU
                     elif menu_ptr['ptr'] == 3:
                         game_running = False
                 ui.process_menu_commands({'dec':keys[K_UP], 'inc':keys[K_DOWN]}, menu_ptr)
@@ -159,6 +219,10 @@ while game_running:
                 game_running = False
             if event.type == KEYDOWN:
                 keys = pygame.key.get_pressed()
+                if keys[K_ESCAPE]:
+                    game_state = MAIN_MENU
+                    if game_paused:
+                        game_state = GAME_RUNNING
                 if keys[K_RETURN]:
                     if options_ptr[0]['ptr'] == 0:
                         screen = pygame.display.set_mode(new_mode, pygame.FULLSCREEN if fullscreen else 0)
@@ -174,6 +238,8 @@ while game_running:
                         fps_limit = menu_lim
                     if options_ptr[0]['ptr'] == 3:
                         game_state = MAIN_MENU
+                        if game_paused:
+                            game_state = GAME_RUNNING
                 ui.process_menu_commands([{'dec':keys[K_UP], 'inc':keys[K_DOWN]}, {'dec':keys[K_LEFT], 'inc':keys[K_RIGHT]}], options_ptr)
 
     elif game_state == GAME_RUNNING:
@@ -192,9 +258,6 @@ while game_running:
             player_timers[0] = anim.update(anim_state, player_timers[0], life)
             player_movement, player_y_momentum = move_player(player_moves[0], player_moves[1], player_blocks[0], player_blocks[1], player_y_momentum, global_camera, player, anim_state, ms)
             player_rect, collisions = move(player_rect, player_movement, tile_rects)
-
-            #mouse_pos = pygame.mouse.get_pos()
-            #pygame.draw.rect(display, (255, 0, 0), (mouse_pos[0]/(screen.get_width()/display.get_width()), mouse_pos[1]/(screen.get_height()/display.get_height()), 5, 5))
 
             if collisions['bottom']:
                 jump_mode = 0
@@ -255,6 +318,29 @@ while game_running:
                     game_state = GAME_OVER
 
             smooth_camera(global_camera, player_rect, display, player_moves[1], player_moves[0], jumping)
+        
+            player_timers[0] += ms
+
+            if player_timers[4] < 16384:
+                player_timers[4] += ms
+
+            if player_timers[3] < 16384:
+                if life-old_life == 0:
+                    player_timers[3] += ms*0.3
+                else:
+                    player_timers[3] = 0
+
+            if player_rect.x >= 3520 and player_rect.y >= 270:
+                game_state = GAME_OVER
+
+            hud.update(game_hud, (life, player_timers[4]/163.84, player_timers[3]/163.84))
+
+            for enemy in enemies:
+                enemy['time_acc'] += ms
+
+            sfx_acc += ms
+
+            old_life = life
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -277,7 +363,7 @@ while game_running:
                     if keys[K_BACKSPACE]:
                         global_camera = [player_rect.x-100, player_rect.y-100]
                     if keys[K_UP]:
-                        if air_timer > 15 and not dashd and player_timers[4] > 16384:
+                        if air_timer > 15 and not dashd and player_timers[4] >= 16384:
                             pygame.mixer.Sound.play(dash_sound)
                             dashd = True
                             jumping = True
@@ -315,15 +401,45 @@ while game_running:
                         anim.change(player, anim_state, 'attack2')
 
                     if keys[K_x]:
-                        if not player_moves[0] and not player_moves[1] and player_timers[3] > 16384:
+                        if not player_moves[0] and not player_moves[1] and player_timers[3] >= 16384:
                             for enemy in enemies:
                                 damage_enemy(player_rect, enemy, 50)
                             pygame.mixer.Sound.play(punch_sound)
                             anim.change(player, anim_state, 'attack3')
                             player_timers[3] = 0
+                else:
+                    ui.process_menu_commands({'dec':keys[K_UP], 'inc':keys[K_DOWN]}, pause_ptr)
+
 
                 if keys[K_ESCAPE]:
                     game_paused = not game_paused
+                if keys[K_RETURN]:
+                    if pause_ptr['ptr'] == 0:
+                        game_paused = not game_paused
+                    elif pause_ptr['ptr'] == 1:
+                        if pills > 0 and life < 100:
+                            life = 100
+                            pills -= 1
+                            pill_lock = True
+                    elif pause_ptr['ptr'] == 2:
+                        game_state = OPTIONS_MENU
+                        for i in range(len(video_modes)):
+                            if new_mode in video_modes:
+                                if video_modes[i] == new_mode:
+                                    options_ptr[1]['ptr'] = i
+                                    break
+                            else:
+                                video_modes.append(new_mode)
+                                options_ptr[1]['ptr'] = 8
+                                break
+                        options_ptr[0]['store'][0] = options_ptr[1]['ptr']
+                    elif pause_ptr['ptr'] == 3:
+                        game_state = COMMANDS_MENU
+                    elif pause_ptr['ptr'] == 4:
+                        game_paused = not game_paused
+                        game_state = MAIN_MENU
+
+                    
 
             if event.type == KEYUP and not game_paused and life > 0:
                 if event.key == K_RIGHT:
@@ -358,30 +474,26 @@ while game_running:
             player_y_momentum = 0
             player_moves[0], player_moves[1] = False, False
             display = blur(display, 3.5)
-
-        player_timers[0] += ms
-
-        if player_timers[4] < 16384:
-            player_timers[4] += ms
-
-        if player_timers[3] < 16384:
-            if life-old_life == 0:
-                player_timers[3] += ms*0.3
-            else:
-                player_timers[3] = 0
-
-        hud.update(game_hud, (life, player_timers[4]/163.84, player_timers[3]/163.84))
-
-        for enemy in enemies:
-            enemy['time_acc'] += ms
-
-        sfx_acc += ms
-
-        old_life = life
+            display.blit(dark_overlay, (0,0))
+            print_text(font, display, "Pause Menu", display.get_width()/2, -25, (255,255,255), scale=4)
+            main_labels = ["Resume", f"Pills: {pills}", "Options", "Commands", "Exit"]
+            ui.draw_menu(display, font, main_labels, pause_ptr['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
 
     elif game_state == GAME_OVER:
-        display.fill((0,0,0))
-        print_text(font, display, "GAME OVER", display.get_width()/2, -15, (255,255,255), scale=4)
+        loopBackground(display, bg, dt_value(ms, 1.5), player_y_momentum, (player_moves[0], player_moves[1]))
+        tile_rects = render_map(display, tilelist, TILE_SIZE, game_map, global_camera)
+        render_objects(display, objlist, TILE_SIZE, game_objs, global_camera)
+        render_objects(display, objlist2, TILE_SIZE, game_objs2, global_camera)
+
+        for enemy in enemies:
+            enemy['rect'] = draw_char(display, enemy['rect'], global_camera, enemy['state'])
+
+        display.blit((gold_overlay if life > 0 else dark_overlay), (0,0))
+        display = blur(display, 3.5)
+
+        player_rect = draw_char(display, player_rect, global_camera, anim_state)
+
+        print_text(font, display,  ("MATCH COMPLETED!" if life > 0 else "GAME OVER"), display.get_width()/2, -15, (255,255,255), scale=4)
         print_text(font, display, "Press ENTER to return to the main menu", display.get_width()/2, 150, (255,255,255))
 
         for event in pygame.event.get():
