@@ -38,7 +38,7 @@ jumping = False
 old_life = 0
 life = 100
 life_lost = 0
-pills = 3
+pills = 5
 
 font = pygame.font.Font('Font/PixeloidMono-1G8ae.ttf', 9)
 
@@ -117,7 +117,11 @@ X Key to special attack (only grows if you don't take damage).
 Menus:
 Arrow keys to navegate through menus and options.
 Enter key to select or apply an option.
-Esc key to exit a menu.'''
+Esc key to exit a menu.
+
+Tips:
+- You can dash while in the air.
+- You can heal with a pill on Pause Menu.'''
 
 while game_running:
     if game_state == COMMANDS_MENU:
