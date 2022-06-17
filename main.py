@@ -85,7 +85,7 @@ gold_overlay = new_rectEX(display.get_width(), display.get_height(), (255,215,0,
 
 menu_ptr = {'ptr': 0, 'lim': 4, 'store':None}
 pause_ptr = {'ptr': 0, 'lim': 5, 'store':None}
-options_ptr = [{'ptr': 0, 'lim': 4, 'store':[0,1,0,0]}, {'ptr': 0, 'lim': 7, 'store':None}]
+options_ptr = [{'ptr': 0, 'lim': 4, 'store':[0,1,3,0]}, {'ptr': 0, 'lim': 7, 'store':None}]
 
 new_mode = (screen.get_width(),screen.get_height())
 
@@ -154,7 +154,8 @@ while game_running:
                 keys = pygame.key.get_pressed()
                 if keys[K_RETURN]:
                     if menu_ptr['ptr'] == 0:
-                        pygame.mixer.music.set_volume(0.1)
+                        volume = 0.1
+                        pygame.mixer.music.set_volume(volume)
                         game_state = GAME_RUNNING
                         life = 100
                         pills = 3
@@ -193,7 +194,7 @@ while game_running:
 
         display.blit(dark_overlay, (0,0))
         print_text(font, display, "Options", display.get_width()/2, -25, (255,255,255), scale=4)
-        opt_labels = [f"Resolution: {new_mode[0]}x{new_mode[1]}", f"Fullscreen: {fullscreen}", f"FPS Limit: {menu_lim}", "Back"]
+        opt_labels = [f"Resolution: {new_mode[0]}x{new_mode[1]}", f"Fullscreen: {fullscreen}", f"Music Volume: {int(volume*100)}%", "Back"]
         ui.draw_menu(display, font, opt_labels, options_ptr[0]['ptr'], display.get_width()/2, 50.0, (255,255,255), (95,95,185), 2.5)
 
         if options_ptr[0]['ptr'] == 0:
@@ -203,9 +204,8 @@ while game_running:
             options_ptr[1]['lim'] = 2
             fullscreen = bool(options_ptr[1]['ptr'])
         elif options_ptr[0]['ptr'] == 2:
-            options_ptr[1]['lim'] = 1
-            if options_ptr[1]['ptr'] == 0:
-                menu_lim = 60
+            options_ptr[1]['lim'] = 11
+            volume = options_ptr[1]['ptr']/10
         elif options_ptr[0]['ptr'] == 3:
             options_ptr[1]['lim'] = 0
 
@@ -235,7 +235,7 @@ while game_running:
                             screen = pygame.display.set_mode(new_mode, pygame.FULLSCREEN)
                             display = pygame.Surface((250*(screen.get_width()/screen.get_height()), 250))
                     if options_ptr[0]['ptr'] == 2:
-                        fps_limit = menu_lim
+                        pygame.mixer.music.set_volume(volume)
                     if options_ptr[0]['ptr'] == 3:
                         game_state = MAIN_MENU
                         if game_paused:
